@@ -12,10 +12,21 @@ repositories {
         name = "spigotmc-repo"
         url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
     }
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
 }
 
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.0.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.3")
+    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.108.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.23.0")
+    testRuntimeOnly("net.kyori:adventure-api:4.24.0")
+    testRuntimeOnly("net.kyori:adventure-platform-api:4.4.1")
 }
 
 tasks {
@@ -43,6 +54,10 @@ tasks.withType(JavaCompile).configureEach {
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         options.release.set(targetJavaVersion)
     }
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
 
 processResources {
