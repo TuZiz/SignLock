@@ -2,7 +2,7 @@
 
 ## Overview
 
-这条路线把 SignLock 从“已有基本功能的牌子锁插件”推进到“可稳定发布的中文服务器插件”。路线重点不是扩展新玩法，而是先收紧锁语义、补齐保护边界、修复资源质量，并建立可以重复执行的验证基线。
+This roadmap moves SignLock from an already-functional sign lock plugin to a release-ready plugin for Chinese Minecraft servers. The priority is not feature expansion, but locking down shared-target semantics, authorization boundaries, resource quality, and repeatable validation.
 
 ## Phases
 
@@ -12,59 +12,59 @@
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Lock Target Correctness** - 修复单双箱和共享容器的锁归属与访问判定。
-- [ ] **Phase 2: Authorization & Protection Matrix** - 收紧授权管理与保护矩阵，保证命令、破坏和自动化路径一致。
-- [ ] **Phase 3: Localization & Release Readiness** - 修复默认中文资源质量并建立构建/冒烟验证基线。
+- [x] **Phase 1: Lock Target Correctness** - Fix canonical lock ownership and shared-target behavior for single containers, double chests, and managed signs.
+- [x] **Phase 2: Authorization & Protection Matrix** - Close authorization, break protection, automation protection, and identity-resolution gaps so all core entrypoints behave consistently.
+- [ ] **Phase 3: Localization & Release Readiness** - Repair default Chinese resources and establish the final release and smoke-validation baseline.
 
 ## Phase Details
 
 ### Phase 1: Lock Target Correctness
-**Goal**: 让主锁牌、扩展牌、单双箱与容器访问在所有入口都指向一致的受保护目标。
+**Goal**: Make main signs, extension signs, single containers, double chests, and container access all resolve to the same protected target across every entrypoint.
 **Depends on**: Nothing (first phase)
 **Requirements**: [LOCK-01, LOCK-02, LOCK-03, LOCK-04, PROT-01, PROT-02]
 **Success Criteria** (what must be TRUE):
-  1. 玩家给单箱或双箱贴主锁牌后，访问判定对整个目标一致生效。
-  2. 双箱任一半边被未授权玩家点击或打开时，都会被正确拦截。
-  3. 主人可以继续通过扩展牌增加授权，不会因为箱体半边或牌子位置造成误判。
-  4. 锁牌被主人编辑时，系统控制的头部和所有者信息不会损坏。
+  1. Creating a lock on a single or double chest protects the same underlying target regardless of which half was clicked.
+  2. Unauthorized players are blocked consistently from either side of a shared target.
+  3. Owners can continue extending authorization via managed signs without half-block ambiguity.
+  4. Editing lock signs preserves system-controlled structure and owner data.
 **Plans**: 3 plans
 
 Plans:
-- [x] 01-01-PLAN.md - 安装 MockBukkit 回归底座并在 `LockService` 内收口 canonical target 与共享扩展牌语义。
-- [x] 01-02-PLAN.md - 修复 `LockListener` 的右键、开箱与自动化入口，使其全部复用共享目标判定。
-- [x] 01-03-PLAN.md - 收口主锁/扩展牌贴牌与锁牌编辑结构保护，避免共享目标与系统控制行回归。
+- [x] 01-01-PLAN.md - Install the MockBukkit regression base and centralize canonical target semantics in `LockService`.
+- [x] 01-02-PLAN.md - Make `LockListener` reuse shared-target decisions for interact, open, and automation entrypoints.
+- [x] 01-03-PLAN.md - Close lock sign placement and sign edit protections around main and extension signs.
 
 ### Phase 2: Authorization & Protection Matrix
-**Goal**: 让授权管理、破坏保护、自动化保护和身份解析覆盖整个保护矩阵。
+**Goal**: Cover authorization management, break protection, automation protection, and identity resolution across the full protection matrix.
 **Depends on**: Phase 1
 **Requirements**: [PROT-03, PROT-04, OPS-02, OPS-03]
 **Success Criteria** (what must be TRUE):
-  1. 未授权玩家无法破坏受保护方块本体或他人的锁牌。
-  2. 自动化搬运、爆炸、活塞和流体不会绕过既有保护语义。
-  3. `/signlock add` 与 `/signlock remove` 在扩展牌已满、目标无效或玩家名解析场景下给出正确结果。
-  4. 主人、授权玩家、管理员绕过三种身份边界在核心路径上表现一致。
+  1. Unauthorized players cannot break protected block bodies or other players' managed signs.
+  2. Automation, explosions, pistons, and fluids cannot bypass protected-target semantics.
+  3. `/signlock add` and `/signlock remove` return correct outcomes for exhausted extension space, invalid targets, and identity-resolution cases.
+  4. Owner, authorized player, and admin-bypass boundaries are consistent across command and listener paths.
 **Plans**: 3 plans
 
 Plans:
-- [x] 02-01: 整理命令授权链与玩家身份缓存行为。
-- [x] 02-02: 对破坏、爆炸、活塞、流体、自动化等保护事件做一致性核对。
-- [ ] 02-03: 补充回归验证步骤并修正边缘条件。
+- [x] 02-01 - Add regression-first suites for listener protection, command authorization, and identity-cache behavior.
+- [x] 02-02 - Repair listener-side break and protection-matrix semantics through `LockService`.
+- [x] 02-03 - Close command identity normalization gaps and rerun full Phase 2 plus Phase 1 shared-target regressions.
 
 ### Phase 3: Localization & Release Readiness
-**Goal**: 让默认资源、插件元数据和发布验证达到可交付状态。
+**Goal**: Make default resources, plugin metadata, and release verification ready for delivery.
 **Depends on**: Phase 2
 **Requirements**: [OPS-01, REL-01, REL-02, REL-03]
 **Success Criteria** (what must be TRUE):
-  1. 默认 `config.yml` 和 `plugin.yml` 在 UTF-8 环境下可直接阅读和使用。
-  2. 服主可以重载配置并看到正确的中文提示，不需要手工修默认文案。
-  3. 仓库包含覆盖关键保护路径的手工测试清单或发布前检查说明。
-  4. 当前代码在目标 Java / Spigot 环境下可以稳定构建，并保留 Folia 兼容声明。
+  1. Default `config.yml` and `plugin.yml` are directly readable and usable in UTF-8 Chinese environments.
+  2. Operators can reload configuration and receive correct Chinese messages without patching defaults.
+  3. The repository includes a minimal but executable smoke and release checklist.
+  4. The project builds successfully for the target Java / Spigot environment while preserving Folia compatibility declarations.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: 修复资源文件中的中文乱码与描述文本。
-- [ ] 03-02: 整理发布前验证文档与测试矩阵。
-- [ ] 03-03: 执行构建与最终兼容性确认，准备首个可发布版本。
+- [ ] 03-01 - Repair garbled Chinese text in resources and metadata.
+- [ ] 03-02 - Produce release-checklist and validation-matrix documentation.
+- [ ] 03-03 - Run final build and compatibility verification before release.
 
 ## Progress
 
@@ -74,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Lock Target Correctness | 3/3 | Complete | 2026-04-02 |
-| 2. Authorization & Protection Matrix | 2/3 | In Progress | 2026-04-02 |
+| 2. Authorization & Protection Matrix | 3/3 | Complete | 2026-04-02 |
 | 3. Localization & Release Readiness | 0/3 | Not started | - |

@@ -22,8 +22,8 @@
 ### Operations
 
 - [ ] **OPS-01**: 服主可以通过 `/signlock reload` 重载配置，通过 `/signlock info` 查看锁的主人、授权列表和扩展牌数量。
-- [ ] **OPS-02**: 锁主人可以通过 `/signlock add <玩家>` 和 `/signlock remove <玩家>` 管理授权名单，并在空间不足或目标无效时得到准确信息。
-- [ ] **OPS-03**: 玩家身份缓存与名字解析在插件启停和授权操作后保持一致，不因离线玩家或大小写差异破坏授权判断。
+- [x] **OPS-02**: 锁主人可以通过 `/signlock add <玩家>` 和 `/signlock remove <玩家>` 管理授权名单，并在空间不足或目标无效时得到准确信息。
+- [x] **OPS-03**: 玩家身份缓存与名字解析在插件启停和授权操作后保持一致，不因离线玩家或大小写差异破坏授权判断。
 
 ### Localization & Release
 
@@ -64,8 +64,8 @@
 | PROT-03 | Phase 2 | Complete |
 | PROT-04 | Phase 2 | Complete |
 | OPS-01 | Phase 3 | Pending |
-| OPS-02 | Phase 2 | Pending |
-| OPS-03 | Phase 2 | Pending |
+| OPS-02 | Phase 2 | Complete |
+| OPS-03 | Phase 2 | Complete |
 | REL-01 | Phase 3 | Pending |
 | REL-02 | Phase 3 | Pending |
 | REL-03 | Phase 3 | Pending |

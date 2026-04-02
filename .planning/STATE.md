@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-04-02T06:21:19.462Z"
+status: ready_for_verification
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-04-02T06:28:31.746Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -20,37 +20,37 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-04-02)
 
-**Core value:** 玩家贴上牌子后，受保护方块必须稳定、可预期地只允许主人和已授权玩家访问。
-**Current focus:** Phase 02 — authorization-protection-matrix
+**Core value:** 稳定、可预期地只允许锁主与已授权玩家访问被保护目标。
+**Current focus:** Phase 03 - localization-release-readiness
 
 ## Current Position
 
-Phase: 02 (authorization-protection-matrix) — EXECUTING
+Phase: 02 (authorization-protection-matrix) - COMPLETE
 Plan: 3 of 3
-Status: Ready to execute
+Status: Ready for verification / next phase
 Last activity: 2026-04-02
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 5
-- Average duration: 14min
-- Total execution time: 1.2 hours
+- Total plans completed: 6
+- Average duration: 13min
+- Total execution time: 1.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3 | 54min | 18min |
-| 2 | 2 | 16min | 8min |
+| 2 | 3 | 25min | 8min |
 | 3 | 0 | - | - |
 
 **Recent Trend:**
 
-- Last 5 plans: 13min, 20min, 21min, 10min, 6min
+- Last 5 plans: 20min, 21min, 10min, 6min, 9min
 - Trend: Stable
 
 | Phase 01 P01 | 13min | 2 tasks | 4 files |
@@ -58,6 +58,7 @@ Progress: [████████░░] 83%
 | Phase 01 P03 | 21min | 2 tasks | 3 files |
 | Phase 02 P01 | 10min | 2 tasks | 4 files |
 | Phase 02 P02 | 6min | 2 tasks | 2 files |
+| Phase 02 P03 | 9min | 2 tasks | 1 file |
 
 ## Accumulated Context
 
@@ -66,16 +67,18 @@ Progress: [████████░░] 83%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Init] 按 brownfield 项目初始化，而不是把现有插件当作新项目重建。
-- [Init] 当前里程碑优先解决锁语义正确性、中文资源质量和发布验证基线。
-- [Phase 01]: Double chest canonical block is selected deterministically by stable coordinate ordering so LockInfo.targetBlock() no longer depends on clicked half.
-- [Phase 01]: Managed-sign lookup and extension flows now reuse findPlacementTarget/findLock semantics instead of separate attached-block rules.
-- [Phase 01]: D-07 remains in force: locked-use and locked-container stay as separate prompts even though they share the same canonical target decision chain.
-- [Phase 01]: Listener placement and sign-edit regressions now model Bukkit SignChangeEvent semantics with existing sign state plus mutable event lines.
-- [Phase 02]: Phase 02-01 delivers regression-first contracts and intentionally keeps red tests for authorized-break and remove-normalization gaps.
-- [Phase 02]: Piston destination-collision risk stays documented as a boundary proof test in 02-01 instead of changing runtime semantics early.
-- [Phase 02]: Break semantics are explicitly named as canBreak(...) while remaining manage-level authorization.
-- [Phase 02]: Listener protection entrypoints now delegate protected-structure iteration back to LockService for break, piston, and fluid paths.
+- [Init] Treat the repository as a brownfield stabilization project rather than a rewrite.
+- [Init] Prioritize lock semantics, Chinese-readable defaults, and release validation before expansion work.
+- [Phase 01] Double chest canonical block selection is deterministic by stable coordinate ordering.
+- [Phase 01] Managed-sign lookup and extension flows reuse `findPlacementTarget` / `findLock`.
+- [Phase 01] Locked-use and locked-container prompts remain separate even though they share canonical target resolution.
+- [Phase 01] Listener placement and sign-edit regressions model Bukkit `SignChangeEvent` semantics with existing sign state plus mutable event lines.
+- [Phase 02] Phase 02-01 delivered regression-first contracts and intentionally preserved red tests for authorized-break and remove-normalization gaps.
+- [Phase 02] Piston destination-collision risk remains documented as a boundary proof test rather than a Phase 2 runtime change.
+- [Phase 02] Break semantics are explicitly named as `canBreak(...)` while remaining manage-level authorization.
+- [Phase 02] Listener protection entrypoints delegate protected-structure iteration back to `LockService`.
+- [Phase 02] Command-side target player normalization stays in `SignLockCommand` so listener and `LockService` scopes remain unchanged.
+- [Phase 02] Unknown or unresolved identity lookups fall back to the original text input instead of producing null command targets.
 
 ### Pending Todos
 
@@ -83,11 +86,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- 默认资源文件存在中文乱码，属于发布阻塞项。
-- 双箱、扩展牌与多入口保护路径需要持续做回归验证，避免局部修复后其他入口退化。
+- Default resource files still contain Chinese text quality issues that block release readiness.
+- Shared-target and managed-sign semantics should continue to be regression-tested across future phases to avoid cross-entry regressions.
 
 ## Session Continuity
 
-Last session: 2026-04-02T06:20:58.647Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-04-02T06:28:31.746Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
