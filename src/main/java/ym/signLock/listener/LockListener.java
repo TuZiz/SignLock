@@ -173,21 +173,21 @@ public final class LockListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (containsProtectedBlock(event.getBlocks())) {
+        if (lockService.containsProtectedStructure(event.getBlocks())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (containsProtectedBlock(event.getBlocks())) {
+        if (lockService.containsProtectedStructure(event.getBlocks())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFluidFlow(BlockFromToEvent event) {
-        if (lockService.isExplosionProtected(event.getBlock()) || lockService.isExplosionProtected(event.getToBlock())) {
+        if (lockService.isProtectedStructure(event.getBlock()) || lockService.isProtectedStructure(event.getToBlock())) {
             event.setCancelled(true);
         }
     }
@@ -313,15 +313,6 @@ public final class LockListener implements Listener {
         event.setCancelled(true);
         player.openSign(sign);
         return true;
-    }
-
-    private boolean containsProtectedBlock(Iterable<Block> blocks) {
-        for (Block block : blocks) {
-            if (lockService.isExplosionProtected(block)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void preserveManagedSignStructure(SignChangeEvent event, LockInfo lock) {

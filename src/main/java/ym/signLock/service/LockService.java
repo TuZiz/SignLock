@@ -156,6 +156,15 @@ public final class LockService {
         return isProtectedStructure(block);
     }
 
+    public boolean containsProtectedStructure(Iterable<Block> blocks) {
+        for (Block block : blocks) {
+            if (isProtectedStructure(block)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isAuthorizedOnLock(LockInfo lock, String playerName) {
         if (sameIdentity(lock.owner(), playerName)) {
             return true;
