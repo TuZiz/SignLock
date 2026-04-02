@@ -72,7 +72,7 @@ public final class SignLockConfig {
         this.invalidLockPlacementMessage = color(config.getString("messages.invalid-lock-placement", "&c请把牌子放在可上锁方块旁边。"));
         this.alreadyProtectedMessage = color(config.getString("messages.already-protected", "&c这个方块已经上锁了。"));
         this.lockCreatedMessage = color(config.getString("messages.lock-created", "&a已为 &f%block% &a创建牌子锁。"));
-        this.lockUsageHintMessage = color(config.getString("messages.lock-usage-hint", "&7可直接右键自己的锁牌编辑第 3、4 行，或使用 /bl add 添加玩家。"));
+        this.lockUsageHintMessage = color(config.getString("messages.lock-usage-hint", "&7右键自己的锁牌可手动编辑玩家，或使用 /bl add、/bl remove 管理授权。"));
         this.invalidMoreUsersPlacementMessage = color(config.getString("messages.invalid-more-users-placement", "&c请把牌子放在已上锁方块旁边。"));
         this.missingPrimaryLockMessage = color(config.getString("messages.missing-primary-lock", "&c[更多用户] 牌子必须依附在已有锁牌的方块上。"));
         this.ownerOnlyMoreUsersMessage = color(config.getString("messages.owner-only-more-users", "&c只有所有者才能添加额外授权牌。"));

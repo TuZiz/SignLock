@@ -1,0 +1,122 @@
+# 牌子标题。建议保留默认值，避免和旧锁数据不一致。
+signs:
+  lock-header: "[锁]"
+  more-users-header: "[更多用户]"
+
+# 保护范围与允许上锁的方块。
+protection:
+  explosions: true
+  admin-bypass: true
+  # 每个锁最多可额外挂多少块 [更多用户] 牌子。
+  max-more-user-signs: 4
+  # 自动扩展授权牌时，按这个顺序寻找可放置位置。
+  extension-placement-order:
+    - NORTH
+    - SOUTH
+    - EAST
+    - WEST
+  # 可直接贴锁牌的方块列表。保留英文材质名即可。
+  lockable-materials:
+    - CHEST
+    - TRAPPED_CHEST
+    - BARREL
+    - FURNACE
+    - BLAST_FURNACE
+    - SMOKER
+    - HOPPER
+    - DROPPER
+    - DISPENSER
+    - SHULKER_BOX
+    - WHITE_SHULKER_BOX
+    - ORANGE_SHULKER_BOX
+    - MAGENTA_SHULKER_BOX
+    - LIGHT_BLUE_SHULKER_BOX
+    - YELLOW_SHULKER_BOX
+    - LIME_SHULKER_BOX
+    - PINK_SHULKER_BOX
+    - GRAY_SHULKER_BOX
+    - LIGHT_GRAY_SHULKER_BOX
+    - CYAN_SHULKER_BOX
+    - PURPLE_SHULKER_BOX
+    - BLUE_SHULKER_BOX
+    - BROWN_SHULKER_BOX
+    - GREEN_SHULKER_BOX
+    - RED_SHULKER_BOX
+    - BLACK_SHULKER_BOX
+    - OAK_DOOR
+    - SPRUCE_DOOR
+    - BIRCH_DOOR
+    - JUNGLE_DOOR
+    - ACACIA_DOOR
+    - DARK_OAK_DOOR
+    - MANGROVE_DOOR
+    - CHERRY_DOOR
+    - BAMBOO_DOOR
+    - CRIMSON_DOOR
+    - WARPED_DOOR
+    - PALE_OAK_DOOR
+    - IRON_DOOR
+    - OAK_TRAPDOOR
+    - SPRUCE_TRAPDOOR
+    - BIRCH_TRAPDOOR
+    - JUNGLE_TRAPDOOR
+    - ACACIA_TRAPDOOR
+    - DARK_OAK_TRAPDOOR
+    - MANGROVE_TRAPDOOR
+    - CHERRY_TRAPDOOR
+    - BAMBOO_TRAPDOOR
+    - CRIMSON_TRAPDOOR
+    - WARPED_TRAPDOOR
+    - PALE_OAK_TRAPDOOR
+    - IRON_TRAPDOOR
+    - OAK_FENCE_GATE
+    - SPRUCE_FENCE_GATE
+    - BIRCH_FENCE_GATE
+    - JUNGLE_FENCE_GATE
+    - ACACIA_FENCE_GATE
+    - DARK_OAK_FENCE_GATE
+    - MANGROVE_FENCE_GATE
+    - CHERRY_FENCE_GATE
+    - BAMBOO_FENCE_GATE
+    - CRIMSON_FENCE_GATE
+    - WARPED_FENCE_GATE
+    - PALE_OAK_FENCE_GATE
+
+# 默认提示文案。支持 Minecraft 颜色代码（如 &a、&c）。
+messages:
+  locked-use: "&c你无权使用这个已上锁的方块。"
+  locked-container: "&c你无权打开这个已上锁的容器。"
+  protected-block: "&c这个方块已被牌子锁保护。"
+  protected-sign: "&c你不能破坏别人的锁牌。"
+  invalid-lock-placement: "&c请把牌子放在可上锁方块旁边。"
+  already-protected: "&c这个方块已经上锁了。"
+  lock-created: "&a已为 &f%block% &a创建牌子锁。"
+  lock-usage-hint: "&7右键自己的锁牌可手动编辑玩家，或使用 /bl add、/bl remove 管理授权。"
+  invalid-more-users-placement: "&c请把牌子放在已上锁方块旁边。"
+  missing-primary-lock: "&c[更多用户] 牌子必须依附在已有锁牌的方块上。"
+  owner-only-more-users: "&c只有所有者才能添加额外授权牌。"
+  extra-users-attached: "&a已添加额外授权牌。"
+  reload-success: "&aSignLock 配置已重载。"
+  reload-usage: "&e用法: /signlock reload"
+  no-permission: "&c你没有权限执行此操作。"
+  add-usage: "&e用法: /bl add <玩家名>"
+  remove-usage: "&e用法: /bl remove <玩家名>"
+  info-usage: "&e用法: /bl info"
+  add-success: "&a已将 &f%player% &a加入这个锁。"
+  add-already-authorized: "&e%player% 已经拥有这个锁的权限。"
+  add-list-full: "&c授权牌已满，且无法继续生成新的扩展牌。"
+  add-invalid-sign: "&c请把准星对准一个有效的锁牌。"
+  add-only-owner: "&c只有所有者才能给这个锁添加玩家。"
+  add-player-not-found: "&c请输入要添加的玩家名。"
+  remove-success: "&a已从这个锁中移除 &f%player%&a。"
+  remove-not-found: "&e这个锁里没有玩家 &f%player%&e。"
+  remove-owner-denied: "&c不能移除锁的所有者。"
+  direct-lock-no-space: "&c附近没有可放置锁牌的位置，请腾出一个侧面空间。"
+  info-header: "&6[SignLock] 锁信息"
+  info-owner: "&e所有者: &f%owner%"
+  info-players: "&e授权玩家: &f%players%"
+  info-no-players: "&e授权玩家: &f无"
+  info-extensions: "&e扩展牌数量: &f%count%"
+  automation-blocked: "&c自动化装置无法操作已上锁容器。"
+  sign-edit-denied: "&c你不能修改别人的锁牌内容。"
+  extension-created: "&a已自动生成新的扩展牌。"
