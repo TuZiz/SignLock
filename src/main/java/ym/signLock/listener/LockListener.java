@@ -325,12 +325,26 @@ public final class LockListener implements Listener {
     }
 
     private void preserveManagedSignStructure(SignChangeEvent event, LockInfo lock) {
+        if (isExtraUsersSign(event.getBlock())) {
+            event.setLine(0, config.moreUsersHeader());
+            return;
+        }
+
         if (lock.type() == LockType.PRIMARY) {
             event.setLine(0, config.lockHeader());
             event.setLine(1, lock.owner());
         } else {
             event.setLine(0, config.moreUsersHeader());
         }
+    }
+
+    private boolean isExtraUsersSign(Block block) {
+        if (!(block.getState() instanceof Sign sign)) {
+            return false;
+        }
+
+        String header = cleanLine(sign.getLine(0));
+        return header != null && matches(header, config.moreUsersHeader());
     }
 
     private static String normalizePlayerLine(String value, String owner) {

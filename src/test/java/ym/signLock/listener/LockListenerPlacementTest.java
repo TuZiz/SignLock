@@ -139,8 +139,6 @@ class LockListenerPlacementTest {
         String[] lines = new String[]{"", "", "", ""};
         boolean[] cancelled = new boolean[]{false};
         System.arraycopy(initialLines, 0, lines, 0, Math.min(initialLines.length, lines.length));
-        applyLinesToBlock(signBlock, lines);
-
         SignChangeEvent event = Mockito.mock(SignChangeEvent.class);
         when(event.getBlock()).thenReturn(signBlock);
         when(event.getPlayer()).thenReturn(player);
