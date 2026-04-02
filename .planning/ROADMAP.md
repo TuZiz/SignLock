@@ -17,6 +17,11 @@
 3. GUI 中的单人授权 / 移除会正确同步到现有锁数据。
 **Plans**: 3 plans
 
+Plans:
+- [ ] 04-01-PLAN.md - foundation / test scaffolding / GUI summary model
+- [ ] 04-02-PLAN.md - entry integration / chest GUI rendering / click safety
+- [ ] 04-03-PLAN.md - single add/remove actions / chat input bridge / regression closeout
+
 ### Phase 5: Batch Authorization Flows
 **Goal**: 把单次只处理 1 名玩家的授权流升级为高效、明确的批量操作。  
 **Depends on**: Phase 4  
