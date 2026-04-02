@@ -56,6 +56,17 @@ public final class SignLockConfig {
     private final String automationBlockedMessage;
     private final String signEditDeniedMessage;
     private final String extensionCreatedMessage;
+    private final String guiTitle;
+    private final String guiOwnerLabel;
+    private final String guiTargetLabel;
+    private final String guiExtensionsLabel;
+    private final String guiNoPlayersLabel;
+    private final String guiAddButtonLabel;
+    private final String guiRefreshButtonLabel;
+    private final String guiCloseButtonLabel;
+    private final String guiRemoveHintLine;
+    private final String guiAddPromptMessage;
+    private final String guiAddCancelledMessage;
 
     public SignLockConfig(FileConfiguration config) {
         this.lockHeader = normalizeHeader(config.getString("signs.lock-header", "[锁]"));
@@ -101,6 +112,17 @@ public final class SignLockConfig {
         this.automationBlockedMessage = color(config.getString("messages.automation-blocked", "&c自动化装置无法操作已上锁容器。"));
         this.signEditDeniedMessage = color(config.getString("messages.sign-edit-denied", "&c你不能修改别人的锁牌内容。"));
         this.extensionCreatedMessage = color(config.getString("messages.extension-created", "&a已自动生成新的扩展牌。"));
+        this.guiTitle = color(config.getString("messages.gui-title", "&8SignLock 管理"));
+        this.guiOwnerLabel = color(config.getString("messages.gui-owner-label", "&e所有者: &f%owner%"));
+        this.guiTargetLabel = color(config.getString("messages.gui-target-label", "&e保护目标: &f%block% &7(%world% %x%, %y%, %z%)"));
+        this.guiExtensionsLabel = color(config.getString("messages.gui-extensions-label", "&e扩展牌数量: &f%count%"));
+        this.guiNoPlayersLabel = color(config.getString("messages.gui-no-players-label", "&7当前还没有额外授权玩家"));
+        this.guiAddButtonLabel = color(config.getString("messages.gui-add-button", "&a添加授权"));
+        this.guiRefreshButtonLabel = color(config.getString("messages.gui-refresh-button", "&e刷新界面"));
+        this.guiCloseButtonLabel = color(config.getString("messages.gui-close-button", "&c关闭"));
+        this.guiRemoveHintLine = color(config.getString("messages.gui-remove-hint-line", "&7点击移除这名玩家的授权"));
+        this.guiAddPromptMessage = color(config.getString("messages.gui-add-prompt", "&e在聊天栏输入要添加的玩家名，输入 cancel 取消。"));
+        this.guiAddCancelledMessage = color(config.getString("messages.gui-add-cancelled", "&7已取消添加授权。"));
     }
 
     public String lockHeader() {
@@ -273,6 +295,55 @@ public final class SignLockConfig {
 
     public String extensionCreatedMessage() {
         return extensionCreatedMessage;
+    }
+
+    public String guiTitle() {
+        return guiTitle;
+    }
+
+    public String guiOwnerLabel(String owner) {
+        return guiOwnerLabel.replace("%owner%", owner);
+    }
+
+    public String guiTargetLabel(String blockType, String worldName, int x, int y, int z) {
+        return guiTargetLabel
+                .replace("%block%", blockType)
+                .replace("%world%", worldName)
+                .replace("%x%", Integer.toString(x))
+                .replace("%y%", Integer.toString(y))
+                .replace("%z%", Integer.toString(z));
+    }
+
+    public String guiExtensionsLabel(int count) {
+        return guiExtensionsLabel.replace("%count%", Integer.toString(count));
+    }
+
+    public String guiNoPlayersLabel() {
+        return guiNoPlayersLabel;
+    }
+
+    public String guiAddButtonLabel() {
+        return guiAddButtonLabel;
+    }
+
+    public String guiRefreshButtonLabel() {
+        return guiRefreshButtonLabel;
+    }
+
+    public String guiCloseButtonLabel() {
+        return guiCloseButtonLabel;
+    }
+
+    public String guiRemoveHintLine() {
+        return guiRemoveHintLine;
+    }
+
+    public String guiAddPromptMessage() {
+        return guiAddPromptMessage;
+    }
+
+    public String guiAddCancelledMessage() {
+        return guiAddCancelledMessage;
     }
 
     private static String normalizeHeader(String value) {

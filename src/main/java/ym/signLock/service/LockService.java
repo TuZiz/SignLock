@@ -101,17 +101,8 @@ public final class LockService {
         if (lock == null) {
             return null;
         }
-        Sign preferredSign = signBlock.getState() instanceof Sign sign ? sign : null;
-        List<Sign> managedSigns = collectManagedSigns(lock.targetBlock(), preferredSign);
         List<String> players = new ArrayList<>(lock.allowedPlayers());
-        int extensionCount = 0;
-        for (Sign sign : managedSigns) {
-            String header = normalizeLine(sign.getLine(0));
-            if (header != null && header.equalsIgnoreCase(config.moreUsersHeader())) {
-                extensionCount++;
-            }
-        }
-        return new LockDetails(lock.owner(), players, extensionCount);
+        return new LockDetails(lock.owner(), players, usedExtensionCount(players.size()));
     }
 
     public boolean canAccess(LockInfo lock, Player player) {
@@ -596,6 +587,11 @@ public final class LockService {
             }
         }
         return count;
+    }
+
+    private int usedExtensionCount(int allowedPlayerCount) {
+        int overflow = Math.max(0, allowedPlayerCount - 2);
+        return overflow == 0 ? 0 : (overflow + 2) / 3;
     }
 
     private int maxMoreUserSigns(Block target) {

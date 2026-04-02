@@ -23,6 +23,7 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import ym.signLock.gui.LockManagementGuiService;
 import ym.signLock.config.SignLockConfig;
 import ym.signLock.service.LockService;
 import ym.signLock.service.LockService.LockInfo;
@@ -33,12 +34,23 @@ public final class LockListener implements Listener {
 
     private final LockService lockService;
     private final PlayerIdentityService playerIdentityService;
+    private final LockManagementGuiService guiService;
     private SignLockConfig config;
 
     public LockListener(LockService lockService, PlayerIdentityService playerIdentityService, SignLockConfig config) {
+        this(lockService, playerIdentityService, config, null);
+    }
+
+    public LockListener(
+            LockService lockService,
+            PlayerIdentityService playerIdentityService,
+            SignLockConfig config,
+            LockManagementGuiService guiService
+    ) {
         this.lockService = lockService;
         this.playerIdentityService = playerIdentityService;
         this.config = config;
+        this.guiService = guiService;
     }
 
     public void setConfig(SignLockConfig config) {
@@ -313,7 +325,11 @@ public final class LockListener implements Listener {
         }
 
         event.setCancelled(true);
-        player.openSign(sign);
+        if (player.isSneaking() || guiService == null) {
+            player.openSign(sign);
+        } else {
+            guiService.openFor(player, sign);
+        }
         return true;
     }
 

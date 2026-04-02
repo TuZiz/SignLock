@@ -3,10 +3,18 @@ package ym.signLock;
 import org.bukkit.plugin.java.JavaPlugin;
 import ym.signLock.command.SignLockCommand;
 import ym.signLock.config.SignLockConfig;
+import ym.signLock.gui.LockManagementGuiActionService;
+import ym.signLock.gui.LockManagementGuiService;
+import ym.signLock.gui.LockManagementPendingInputStore;
+import ym.signLock.listener.LockGuiChatInputListener;
+import ym.signLock.listener.LockGuiListener;
 import ym.signLock.listener.LockListener;
 import ym.signLock.listener.PlayerIdentityListener;
+import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
+
+import java.util.function.Consumer;
 
 public final class SignLock extends JavaPlugin {
 
@@ -14,6 +22,8 @@ public final class SignLock extends JavaPlugin {
     private LockListener lockListener;
     private SignLockConfig signLockConfig;
     private PlayerIdentityService playerIdentityService;
+    private LockManagementGuiService lockManagementGuiService;
+    private LockManagementGuiActionService lockManagementGuiActionService;
 
     @Override
     public void onEnable() {
@@ -22,15 +32,33 @@ public final class SignLock extends JavaPlugin {
         playerIdentityService = new PlayerIdentityService(this);
         playerIdentityService.preload(getServer().getOfflinePlayers());
         lockService = new LockService(signLockConfig, playerIdentityService);
-        lockListener = new LockListener(lockService, playerIdentityService, signLockConfig);
+
+        LockPlayerNameNormalizer playerNameNormalizer = new LockPlayerNameNormalizer(playerIdentityService);
+        LockManagementPendingInputStore pendingInputStore = new LockManagementPendingInputStore();
+        lockManagementGuiService = new LockManagementGuiService(lockService, signLockConfig);
+        lockManagementGuiActionService = new LockManagementGuiActionService(
+                lockService,
+                playerNameNormalizer,
+                lockManagementGuiService,
+                pendingInputStore,
+                signLockConfig
+        );
+
+        lockListener = new LockListener(lockService, playerIdentityService, signLockConfig, lockManagementGuiService);
+        Consumer<Runnable> nextTick = task -> getServer().getScheduler().runTask(this, task);
+
         getServer().getPluginManager().registerEvents(lockListener, this);
+        getServer().getPluginManager().registerEvents(new LockGuiListener(nextTick, lockManagementGuiActionService), this);
+        getServer().getPluginManager().registerEvents(new LockGuiChatInputListener(nextTick, pendingInputStore, lockManagementGuiActionService), this);
         getServer().getPluginManager().registerEvents(new PlayerIdentityListener(playerIdentityService), this);
+
         SignLockCommand signLockCommand = new SignLockCommand(this);
         if (getCommand("signlock") != null) {
             getCommand("signlock").setExecutor(signLockCommand);
             getCommand("signlock").setTabCompleter(signLockCommand);
         }
-        getLogger().info("SignLock 已启用，配置与玩家身份缓存已加载。");
+
+        getLogger().info("SignLock 已启用，配置、锁服务和 GUI 管理入口已加载。");
     }
 
     @Override
@@ -44,6 +72,8 @@ public final class SignLock extends JavaPlugin {
         signLockConfig = new SignLockConfig(getConfig());
         lockService.setConfig(signLockConfig);
         lockListener.setConfig(signLockConfig);
+        lockManagementGuiService.setConfig(signLockConfig);
+        lockManagementGuiActionService.setConfig(signLockConfig);
         getLogger().info("SignLock 配置已重载。");
     }
 

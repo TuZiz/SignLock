@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ym.signLock.SignLock;
+import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService.AddPlayerResult;
 import ym.signLock.service.LockService.LockDetails;
 import ym.signLock.service.LockService.LockInfo;
@@ -179,10 +180,7 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
     }
 
     private String normalizeTargetPlayer(Player actor, String targetPlayer) {
-        plugin.getPlayerIdentityService().remember(actor);
-        String normalizedTarget = plugin.getPlayerIdentityService().resolveStoredName(targetPlayer);
-        plugin.getPlayerIdentityService().save();
-        return normalizedTarget == null || normalizedTarget.isBlank() ? targetPlayer : normalizedTarget;
+        return new LockPlayerNameNormalizer(plugin.getPlayerIdentityService()).normalize(actor, targetPlayer);
     }
 
     private TargetedLock getTargetedLock(Player player) {
