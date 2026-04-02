@@ -1,0 +1,5 @@
+name: SignLock
+version: '1.0-SNAPSHOT'
+main: ym.signLock.SignLock
+api-version: '1.21'
+authors: [ ymxc ]
