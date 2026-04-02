@@ -10,7 +10,7 @@
 - [x] **LOCK-01**: 玩家可以在支持的单箱、双箱、木桶和潜影盒上创建主锁牌，且主锁牌绑定到正确的受保护目标。
 - [x] **LOCK-02**: 玩家可以在已有主锁的目标上继续添加扩展授权牌，且只有锁主人或管理员绕过用户可以执行该操作。
 - [x] **LOCK-03**: 双箱的两个半边必须被视为同一把锁的共享目标，任一半边上的锁牌与授权都对整个双箱生效。
-- [ ] **LOCK-04**: 锁牌编辑时必须保留系统控制的结构行，避免主人名、锁头和扩展牌格式被误改坏。
+- [x] **LOCK-04**: 锁牌编辑时必须保留系统控制的结构行，避免主人名、锁头和扩展牌格式被误改坏。
 
 ### Protection
 
@@ -58,7 +58,7 @@
 | LOCK-01 | Phase 1 | Complete |
 | LOCK-02 | Phase 1 | Complete |
 | LOCK-03 | Phase 1 | Complete |
-| LOCK-04 | Phase 1 | Pending |
+| LOCK-04 | Phase 1 | Complete |
 | PROT-01 | Phase 1 | Complete |
 | PROT-02 | Phase 1 | Complete |
 | PROT-03 | Phase 2 | Pending |
