@@ -165,6 +165,18 @@ public final class LockService {
         return false;
     }
 
+    public boolean wouldMoveIntoProtectedStructure(Iterable<Block> blocks, BlockFace direction) {
+        if (direction == null) {
+            return false;
+        }
+        for (Block block : blocks) {
+            if (isProtectedStructure(block.getRelative(direction))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isAuthorizedOnLock(LockInfo lock, String playerName) {
         if (sameIdentity(lock.owner(), playerName)) {
             return true;

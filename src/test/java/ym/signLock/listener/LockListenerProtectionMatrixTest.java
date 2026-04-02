@@ -34,7 +34,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -135,7 +134,7 @@ class LockListenerProtectionMatrixTest {
     }
 
     @Test
-    void pistonDestinationCollisionBoundaryIsCurrentlyUnprotected() {
+    void pistonDestinationCollisionIntoProtectedStructureCancelsEvent() {
         Block protectedBarrel = protectedBarrel(60, 64, 0, "Owner");
         Block movingBlock = world.getBlockAt(59, 64, 0);
         movingBlock.setType(Material.STONE);
@@ -145,9 +144,8 @@ class LockListenerProtectionMatrixTest {
 
         listener.onPistonExtend(extendEvent);
 
-        verify(extendEvent, Mockito.never()).setCancelled(true);
-        assertFalse(List.of(movingBlock).contains(protectedBarrel),
-                "当前实现只检查 getBlocks()，该测试用于固定 destination collision 未被覆盖的边界。");
+        verify(extendEvent).setCancelled(true);
+        assertFalse(List.of(movingBlock).contains(protectedBarrel));
     }
 
     @Test

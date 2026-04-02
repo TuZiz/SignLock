@@ -173,14 +173,16 @@ public final class LockListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (lockService.containsProtectedStructure(event.getBlocks())) {
+        if (lockService.containsProtectedStructure(event.getBlocks())
+                || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (lockService.containsProtectedStructure(event.getBlocks())) {
+        if (lockService.containsProtectedStructure(event.getBlocks())
+                || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
             event.setCancelled(true);
         }
     }
