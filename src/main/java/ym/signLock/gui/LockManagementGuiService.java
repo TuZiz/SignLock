@@ -25,6 +25,11 @@ public final class LockManagementGuiService {
         return openFor(player, sign.getBlock());
     }
 
+    public boolean openFor(Player player, LockManagementGuiHolder holder) {
+        player.openInventory(buildInventory(holder));
+        return true;
+    }
+
     public boolean openFor(Player player, LockManagementSession session) {
         Block signBlock = session.resolveSignBlock();
         return signBlock != null && openFor(player, signBlock);

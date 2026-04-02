@@ -1,5 +1,6 @@
 package ym.signLock.gui;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -7,6 +8,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,17 +30,17 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class LockManagementGuiActionTest {
+class LockManagementBatchGuiTest {
 
     private ServerMock server;
     private WorldMock world;
     private SignLockConfig config;
     private PlayerIdentityService playerIdentityService;
     private LockService lockService;
-    private LockBatchAuthorizationService batchAuthorizationService;
     private LockManagementGuiService realGuiService;
     private LockManagementGuiService guiService;
     private LockManagementPendingInputStore pendingInputStore;
@@ -51,17 +53,16 @@ class LockManagementGuiActionTest {
         config = createConfig();
         playerIdentityService = Mockito.mock(PlayerIdentityService.class);
         lockService = new LockService(config, playerIdentityService);
-        batchAuthorizationService = new LockBatchAuthorizationService(lockService, new LockPlayerNameNormalizer(playerIdentityService));
         realGuiService = new LockManagementGuiService(lockService, config);
         guiService = Mockito.mock(LockManagementGuiService.class);
-        pendingInputStore = new LockManagementPendingInputStore();
+        LockPlayerNameNormalizer normalizer = new LockPlayerNameNormalizer(playerIdentityService);
         actionService = new LockManagementGuiActionService(
                 lockService,
                 new LockBatchTargetParser(),
-                batchAuthorizationService,
-                new LockPlayerNameNormalizer(playerIdentityService),
+                new LockBatchAuthorizationService(lockService, normalizer),
+                normalizer,
                 guiService,
-                pendingInputStore,
+                pendingInputStore = new LockManagementPendingInputStore(),
                 config
         );
     }
@@ -72,53 +73,47 @@ class LockManagementGuiActionTest {
     }
 
     @Test
-    void clickingAuthorizedPlayerSlotOnlyTogglesSelection() {
+    void playerSlotClickTogglesSelectionAndConfirmRemovesSelectedPlayers() {
         Block chest = world.getBlockAt(0, 64, 0);
         chest.setType(Material.CHEST);
-        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "Bob");
         LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
         Player owner = mockPlayer("Owner");
 
         actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0]);
+        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[1]);
 
-        Sign unchanged = (Sign) primary.getBlock().getState();
-        assertEquals("Alice", unchanged.getLine(2));
         assertTrue(holder.isSelected(LockManagementGui.PLAYER_SLOTS[0]));
-        verify(guiService).openFor(owner, holder);
-    }
+        assertTrue(holder.isSelected(LockManagementGui.PLAYER_SLOTS[1]));
 
-    @Test
-    void addButtonStartsPendingInputFlow() {
-        Block chest = world.getBlockAt(10, 64, 0);
-        chest.setType(Material.CHEST);
-        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
-        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
-        Player owner = mockPlayer("Owner");
-
-        actionService.handleClick(owner, holder, LockManagementGui.ADD_SLOT);
-
-        assertTrue(pendingInputStore.hasPendingAdd(owner.getUniqueId()));
-        verify(owner).closeInventory();
-        verify(owner).sendMessage(config.guiAddPromptMessage());
-    }
-
-    @Test
-    void chatInputAddsPlayersUsingSharedBatchNormalization() {
-        Block chest = world.getBlockAt(20, 64, 0);
-        chest.setType(Material.CHEST);
-        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
-        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
-        Player owner = mockPlayer("Owner");
-        when(playerIdentityService.resolveStoredName("oldname")).thenReturn("CurrentName");
-
-        pendingInputStore.beginAdd(owner.getUniqueId(), holder.session());
-        actionService.handleChatInput(owner, "oldname Guest");
+        actionService.handleClick(owner, holder, LockManagementGui.REMOVE_SELECTED_SLOT);
 
         Sign updated = (Sign) primary.getBlock().getState();
-        assertEquals("CurrentName", updated.getLine(2));
-        assertEquals("Guest", updated.getLine(3));
-        verify(owner).sendMessage(config.batchAddSummaryMessage(List.of("CurrentName", "Guest"), List.of(), List.of()));
+        assertEquals("", updated.getLine(2));
+        assertEquals("", updated.getLine(3));
+        verify(owner).sendMessage(contains("批量移除完成"));
+        verify(owner).sendMessage(contains("Alice"));
+        verify(owner).sendMessage(contains("Bob"));
         verify(guiService).openFor(owner, holder.session());
+    }
+
+    @Test
+    void inventoryHighlightsSelectedPlayersAndRemoveButtonCount() {
+        Block chest = world.getBlockAt(10, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
+
+        holder.toggleSelectedPlayer(LockManagementGui.PLAYER_SLOTS[0]);
+        var inventory = realGuiService.buildInventory(holder);
+
+        ItemStack selectedPlayer = inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]);
+        ItemStack removeButton = inventory.getItem(LockManagementGui.REMOVE_SELECTED_SLOT);
+        assertEquals(Material.RED_DYE, selectedPlayer.getType());
+        assertEquals(
+                ChatColor.stripColor(config.guiRemoveSelectedButtonLabel(1)),
+                ChatColor.stripColor(removeButton.getItemMeta().getDisplayName())
+        );
     }
 
     private SignLockConfig createConfig() {
@@ -128,12 +123,6 @@ class LockManagementGuiActionTest {
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
         yaml.set("protection.lockable-materials", List.of("CHEST", "BARREL"));
-        yaml.set("messages.add-success", "&aadd-success %player%");
-        yaml.set("messages.remove-success", "&aremove-success %player%");
-        yaml.set("messages.add-already-authorized", "&ealready %player%");
-        yaml.set("messages.add-list-full", "&clist-full");
-        yaml.set("messages.extension-created", "&aextension-created");
-        yaml.set("messages.gui-add-prompt", "&eprompt");
         return new SignLockConfig(yaml);
     }
 

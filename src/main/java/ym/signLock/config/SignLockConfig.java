@@ -65,8 +65,15 @@ public final class SignLockConfig {
     private final String guiRefreshButtonLabel;
     private final String guiCloseButtonLabel;
     private final String guiRemoveHintLine;
+    private final String guiSelectHintLine;
+    private final String guiSelectedHintLine;
+    private final String guiRemoveSelectedButtonLabel;
+    private final String guiRemoveSelectedHintLine;
     private final String guiAddPromptMessage;
     private final String guiAddCancelledMessage;
+    private final String guiRemoveSelectionEmptyMessage;
+    private final String batchAddSummaryMessage;
+    private final String batchRemoveSummaryMessage;
 
     public SignLockConfig(FileConfiguration config) {
         this.lockHeader = normalizeHeader(config.getString("signs.lock-header", "[锁]"));
@@ -120,9 +127,16 @@ public final class SignLockConfig {
         this.guiAddButtonLabel = color(config.getString("messages.gui-add-button", "&a添加授权"));
         this.guiRefreshButtonLabel = color(config.getString("messages.gui-refresh-button", "&e刷新界面"));
         this.guiCloseButtonLabel = color(config.getString("messages.gui-close-button", "&c关闭"));
-        this.guiRemoveHintLine = color(config.getString("messages.gui-remove-hint-line", "&7点击移除这名玩家的授权"));
-        this.guiAddPromptMessage = color(config.getString("messages.gui-add-prompt", "&e在聊天栏输入要添加的玩家名，输入 cancel 取消。"));
+        this.guiRemoveHintLine = color(config.getString("messages.gui-remove-hint-line", "&7点击切换是否加入批量移除"));
+        this.guiSelectHintLine = color(config.getString("messages.gui-select-hint-line", "&e点击选择"));
+        this.guiSelectedHintLine = color(config.getString("messages.gui-selected-hint-line", "&c已选中，点击可取消"));
+        this.guiRemoveSelectedButtonLabel = color(config.getString("messages.gui-remove-selected-button", "&c移除选中(&f%count%&c)"));
+        this.guiRemoveSelectedHintLine = color(config.getString("messages.gui-remove-selected-hint-line", "&7确认移除当前已选中的玩家"));
+        this.guiAddPromptMessage = color(config.getString("messages.gui-add-prompt", "&e在聊天栏输入要添加的玩家名，可用空格或逗号分隔，输入 cancel 取消。"));
         this.guiAddCancelledMessage = color(config.getString("messages.gui-add-cancelled", "&7已取消添加授权。"));
+        this.guiRemoveSelectionEmptyMessage = color(config.getString("messages.gui-remove-selection-empty", "&e请先选中至少一名玩家。"));
+        this.batchAddSummaryMessage = color(config.getString("messages.batch-add-summary", "&a批量添加完成: &f成功 %added_count%(%added%) &7| 已有权限 %already_count%(%already%) &7| 无空间 %no_space_count%(%no_space%)"));
+        this.batchRemoveSummaryMessage = color(config.getString("messages.batch-remove-summary", "&a批量移除完成: &f成功 %removed_count%(%removed%) &7| 未找到 %not_found_count%(%not_found%) &7| 不可移除 %owner_denied_count%(%owner_denied%)"));
     }
 
     public String lockHeader() {
@@ -338,12 +352,52 @@ public final class SignLockConfig {
         return guiRemoveHintLine;
     }
 
+    public String guiSelectHintLine() {
+        return guiSelectHintLine;
+    }
+
+    public String guiSelectedHintLine() {
+        return guiSelectedHintLine;
+    }
+
+    public String guiRemoveSelectedButtonLabel(int count) {
+        return guiRemoveSelectedButtonLabel.replace("%count%", Integer.toString(count));
+    }
+
+    public String guiRemoveSelectedHintLine() {
+        return guiRemoveSelectedHintLine;
+    }
+
     public String guiAddPromptMessage() {
         return guiAddPromptMessage;
     }
 
     public String guiAddCancelledMessage() {
         return guiAddCancelledMessage;
+    }
+
+    public String guiRemoveSelectionEmptyMessage() {
+        return guiRemoveSelectionEmptyMessage;
+    }
+
+    public String batchAddSummaryMessage(List<String> addedPlayers, List<String> alreadyAuthorizedPlayers, List<String> noSpacePlayers) {
+        return batchAddSummaryMessage
+                .replace("%added_count%", Integer.toString(addedPlayers.size()))
+                .replace("%added%", formatPlayers(addedPlayers))
+                .replace("%already_count%", Integer.toString(alreadyAuthorizedPlayers.size()))
+                .replace("%already%", formatPlayers(alreadyAuthorizedPlayers))
+                .replace("%no_space_count%", Integer.toString(noSpacePlayers.size()))
+                .replace("%no_space%", formatPlayers(noSpacePlayers));
+    }
+
+    public String batchRemoveSummaryMessage(List<String> removedPlayers, List<String> notFoundPlayers, List<String> ownerDeniedPlayers) {
+        return batchRemoveSummaryMessage
+                .replace("%removed_count%", Integer.toString(removedPlayers.size()))
+                .replace("%removed%", formatPlayers(removedPlayers))
+                .replace("%not_found_count%", Integer.toString(notFoundPlayers.size()))
+                .replace("%not_found%", formatPlayers(notFoundPlayers))
+                .replace("%owner_denied_count%", Integer.toString(ownerDeniedPlayers.size()))
+                .replace("%owner_denied%", formatPlayers(ownerDeniedPlayers));
     }
 
     private static String normalizeHeader(String value) {
@@ -353,6 +407,10 @@ public final class SignLockConfig {
 
     private static String color(String value) {
         return ChatColor.translateAlternateColorCodes('&', value);
+    }
+
+    private static String formatPlayers(List<String> players) {
+        return players == null || players.isEmpty() ? "无" : String.join(", ", players);
     }
 
     private static Set<Material> loadLockableMaterials(List<String> configured) {

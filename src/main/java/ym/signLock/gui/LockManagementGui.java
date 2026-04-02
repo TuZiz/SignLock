@@ -16,6 +16,7 @@ public final class LockManagementGui {
     public static final int OWNER_SLOT = 0;
     public static final int TARGET_SLOT = 1;
     public static final int EXTENSIONS_SLOT = 2;
+    public static final int REMOVE_SELECTED_SLOT = 23;
     public static final int ADD_SLOT = 24;
     public static final int REFRESH_SLOT = 25;
     public static final int CLOSE_SLOT = 26;
@@ -46,13 +47,24 @@ public final class LockManagementGui {
         } else {
             List<String> players = view.allowedPlayers();
             for (int index = 0; index < players.size() && index < PLAYER_SLOTS.length; index++) {
+                int slot = PLAYER_SLOTS[index];
+                boolean selected = holder.isSelected(slot);
                 inventory.setItem(
-                        PLAYER_SLOTS[index],
-                        item(Material.PAPER, players.get(index), config.guiRemoveHintLine())
+                        slot,
+                        item(
+                                selected ? Material.RED_DYE : Material.PAPER,
+                                players.get(index),
+                                config.guiRemoveHintLine(),
+                                selected ? config.guiSelectedHintLine() : config.guiSelectHintLine()
+                        )
                 );
             }
         }
 
+        inventory.setItem(
+                REMOVE_SELECTED_SLOT,
+                item(Material.REDSTONE, config.guiRemoveSelectedButtonLabel(holder.selectedCount()), config.guiRemoveSelectedHintLine())
+        );
         inventory.setItem(ADD_SLOT, item(Material.LIME_DYE, config.guiAddButtonLabel()));
         inventory.setItem(REFRESH_SLOT, item(Material.CLOCK, config.guiRefreshButtonLabel()));
         inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, config.guiCloseButtonLabel()));

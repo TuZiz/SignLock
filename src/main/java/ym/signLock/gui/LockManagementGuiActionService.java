@@ -4,12 +4,16 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import ym.signLock.config.SignLockConfig;
+import ym.signLock.service.LockBatchAuthorizationService;
+import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService;
 
 public final class LockManagementGuiActionService {
 
     private final LockService lockService;
+    private final LockBatchTargetParser batchTargetParser;
+    private final LockBatchAuthorizationService batchAuthorizationService;
     private final LockPlayerNameNormalizer playerNameNormalizer;
     private final LockManagementGuiService guiService;
     private final LockManagementPendingInputStore pendingInputStore;
@@ -17,12 +21,16 @@ public final class LockManagementGuiActionService {
 
     public LockManagementGuiActionService(
             LockService lockService,
+            LockBatchTargetParser batchTargetParser,
+            LockBatchAuthorizationService batchAuthorizationService,
             LockPlayerNameNormalizer playerNameNormalizer,
             LockManagementGuiService guiService,
             LockManagementPendingInputStore pendingInputStore,
             SignLockConfig config
     ) {
         this.lockService = lockService;
+        this.batchTargetParser = batchTargetParser;
+        this.batchAuthorizationService = batchAuthorizationService;
         this.playerNameNormalizer = playerNameNormalizer;
         this.guiService = guiService;
         this.pendingInputStore = pendingInputStore;
@@ -46,6 +54,11 @@ public final class LockManagementGuiActionService {
             return;
         }
 
+        if (rawSlot == LockManagementGui.REMOVE_SELECTED_SLOT) {
+            removeSelectedPlayers(player, holder);
+            return;
+        }
+
         if (rawSlot == LockManagementGui.CLOSE_SLOT) {
             player.closeInventory();
             return;
@@ -53,12 +66,13 @@ public final class LockManagementGuiActionService {
 
         String playerName = holder.removablePlayerAt(rawSlot);
         if (playerName != null) {
-            removePlayer(player, holder.session(), playerName);
+            holder.toggleSelectedPlayer(rawSlot);
+            guiService.openFor(player, holder);
         }
     }
 
     public void handleChatInput(Player player, String rawInput) {
-        LockManagementPendingInputStore.PendingAddInput pending = pendingInputStore.consume(player.getUniqueId());
+        LockManagementPendingInputStore.PendingInput pending = pendingInputStore.consume(player.getUniqueId());
         if (pending == null) {
             return;
         }
@@ -82,37 +96,54 @@ public final class LockManagementGuiActionService {
             return;
         }
 
-        String normalizedTarget = playerNameNormalizer.normalize(player, message);
-        LockService.AddPlayerResult result = lockService.addPlayerToLock(resolvedLock.sign(), resolvedLock.lock(), normalizedTarget);
-        if (result == LockService.AddPlayerResult.ALREADY_AUTHORIZED) {
-            player.sendMessage(config.addAlreadyAuthorizedMessage(normalizedTarget));
-        } else if (result == LockService.AddPlayerResult.NO_SPACE) {
-            player.sendMessage(config.addListFullMessage());
-        } else {
-            if (result == LockService.AddPlayerResult.ADDED_WITH_EXTENSION) {
-                player.sendMessage(config.extensionCreatedMessage());
-            }
-            player.sendMessage(config.addSuccessMessage(normalizedTarget));
+        var targets = batchTargetParser.parse(message);
+        if (targets.isEmpty()) {
+            player.sendMessage(config.addPlayerNotFoundMessage());
+            guiService.openFor(player, pending.session());
+            return;
         }
+
+        LockBatchAuthorizationService.BatchAddSummary summary =
+                batchAuthorizationService.addPlayers(player, resolvedLock.sign(), resolvedLock.lock(), targets);
+        if (!summary.permitted()) {
+            player.sendMessage(config.addOnlyOwnerMessage());
+            return;
+        }
+
+        player.sendMessage(config.batchAddSummaryMessage(
+                summary.addedPlayers(),
+                summary.alreadyAuthorizedPlayers(),
+                summary.noSpacePlayers()
+        ));
         guiService.openFor(player, pending.session());
     }
 
-    private void removePlayer(Player player, LockManagementSession session, String targetPlayer) {
-        ResolvedLock resolvedLock = resolve(session);
+    private void removeSelectedPlayers(Player player, LockManagementGuiHolder holder) {
+        if (!holder.hasSelection()) {
+            player.sendMessage(config.guiRemoveSelectionEmptyMessage());
+            guiService.openFor(player, holder);
+            return;
+        }
+
+        ResolvedLock resolvedLock = resolve(holder.session());
         if (resolvedLock == null || !lockService.canManage(resolvedLock.lock(), player)) {
             player.sendMessage(config.addInvalidSignMessage());
             return;
         }
 
-        LockService.RemovePlayerResult result = lockService.removePlayerFromLock(resolvedLock.sign(), resolvedLock.lock(), targetPlayer);
-        if (result == LockService.RemovePlayerResult.OWNER_DENIED) {
-            player.sendMessage(config.removeOwnerDeniedMessage());
-        } else if (result == LockService.RemovePlayerResult.NOT_FOUND) {
-            player.sendMessage(config.removeNotFoundMessage(targetPlayer));
-        } else {
-            player.sendMessage(config.removeSuccessMessage(targetPlayer));
+        LockBatchAuthorizationService.BatchRemoveSummary summary =
+                batchAuthorizationService.removePlayers(player, resolvedLock.sign(), resolvedLock.lock(), holder.selectedPlayers());
+        if (!summary.permitted()) {
+            player.sendMessage(config.addOnlyOwnerMessage());
+            return;
         }
-        guiService.openFor(player, session);
+
+        player.sendMessage(config.batchRemoveSummaryMessage(
+                summary.removedPlayers(),
+                summary.notFoundPlayers(),
+                summary.ownerDeniedPlayers()
+        ));
+        guiService.openFor(player, holder.session());
     }
 
     private ResolvedLock resolve(LockManagementSession session) {

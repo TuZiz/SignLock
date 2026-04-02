@@ -10,12 +10,15 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ym.signLock.SignLock;
+import ym.signLock.service.LockBatchAuthorizationService;
+import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService.AddPlayerResult;
 import ym.signLock.service.LockService.LockDetails;
 import ym.signLock.service.LockService.LockInfo;
 import ym.signLock.service.LockService.RemovePlayerResult;
 
+import java.util.Arrays;
 import java.util.List;
 
 public final class SignLockCommand implements CommandExecutor, TabCompleter {
@@ -28,12 +31,12 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length == 2 && args[0].equalsIgnoreCase("add")) {
-            return handleAdd(sender, args[1].trim());
+        if (args.length >= 2 && args[0].equalsIgnoreCase("add")) {
+            return handleAdd(sender, joinTargets(args));
         }
 
-        if (args.length == 2 && args[0].equalsIgnoreCase("remove")) {
-            return handleRemove(sender, args[1].trim());
+        if (args.length >= 2 && args[0].equalsIgnoreCase("remove")) {
+            return handleRemove(sender, joinTargets(args));
         }
 
         if (args.length == 1 && args[0].equalsIgnoreCase("info")) {
@@ -66,7 +69,7 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
         return List.of();
     }
 
-    private boolean handleAdd(CommandSender sender, String targetPlayer) {
+    private boolean handleAdd(CommandSender sender, String rawTargets) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(plugin.getSignLockConfig().addInvalidSignMessage());
             return true;
@@ -75,12 +78,11 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(plugin.getSignLockConfig().noPermissionMessage());
             return true;
         }
-        if (targetPlayer.isEmpty()) {
+        List<String> targets = batchTargetParser().parse(rawTargets);
+        if (targets.isEmpty()) {
             sender.sendMessage(plugin.getSignLockConfig().addPlayerNotFoundMessage());
             return true;
         }
-
-        targetPlayer = normalizeTargetPlayer(player, targetPlayer);
 
         TargetedLock targetedLock = getTargetedLock(player);
         if (targetedLock == null) {
@@ -92,25 +94,26 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        AddPlayerResult result = plugin.getLockService().addPlayerToLock(targetedLock.sign(), targetedLock.lock(), targetPlayer);
-        if (result == AddPlayerResult.ALREADY_AUTHORIZED) {
-            sender.sendMessage(plugin.getSignLockConfig().addAlreadyAuthorizedMessage(targetPlayer));
+        LockBatchAuthorizationService.BatchAddSummary summary = batchAuthorizationService()
+                .addPlayers(player, targetedLock.sign(), targetedLock.lock(), targets);
+        if (!summary.permitted()) {
+            sender.sendMessage(plugin.getSignLockConfig().addOnlyOwnerMessage());
             return true;
-        }
-        if (result == AddPlayerResult.NO_SPACE) {
-            sender.sendMessage(plugin.getSignLockConfig().addListFullMessage());
-            return true;
-        }
-        if (result == AddPlayerResult.ADDED_WITH_EXTENSION) {
-            sender.sendMessage(plugin.getSignLockConfig().extensionCreatedMessage());
         }
 
-        plugin.getPlayerIdentityService().save();
-        sender.sendMessage(plugin.getSignLockConfig().addSuccessMessage(targetPlayer));
+        if (targets.size() == 1) {
+            return sendSingleAddResult(sender, summary);
+        }
+
+        sender.sendMessage(plugin.getSignLockConfig().batchAddSummaryMessage(
+                summary.addedPlayers(),
+                summary.alreadyAuthorizedPlayers(),
+                summary.noSpacePlayers()
+        ));
         return true;
     }
 
-    private boolean handleRemove(CommandSender sender, String targetPlayer) {
+    private boolean handleRemove(CommandSender sender, String rawTargets) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(plugin.getSignLockConfig().addInvalidSignMessage());
             return true;
@@ -119,12 +122,11 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(plugin.getSignLockConfig().noPermissionMessage());
             return true;
         }
-        if (targetPlayer.isEmpty()) {
+        List<String> targets = batchTargetParser().parse(rawTargets);
+        if (targets.isEmpty()) {
             sender.sendMessage(plugin.getSignLockConfig().addPlayerNotFoundMessage());
             return true;
         }
-
-        targetPlayer = normalizeTargetPlayer(player, targetPlayer);
 
         TargetedLock targetedLock = getTargetedLock(player);
         if (targetedLock == null) {
@@ -136,17 +138,22 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        RemovePlayerResult result = plugin.getLockService().removePlayerFromLock(targetedLock.sign(), targetedLock.lock(), targetPlayer);
-        if (result == RemovePlayerResult.OWNER_DENIED) {
-            sender.sendMessage(plugin.getSignLockConfig().removeOwnerDeniedMessage());
-            return true;
-        }
-        if (result == RemovePlayerResult.NOT_FOUND) {
-            sender.sendMessage(plugin.getSignLockConfig().removeNotFoundMessage(targetPlayer));
+        LockBatchAuthorizationService.BatchRemoveSummary summary = batchAuthorizationService()
+                .removePlayers(player, targetedLock.sign(), targetedLock.lock(), targets);
+        if (!summary.permitted()) {
+            sender.sendMessage(plugin.getSignLockConfig().addOnlyOwnerMessage());
             return true;
         }
 
-        sender.sendMessage(plugin.getSignLockConfig().removeSuccessMessage(targetPlayer));
+        if (targets.size() == 1) {
+            return sendSingleRemoveResult(sender, summary);
+        }
+
+        sender.sendMessage(plugin.getSignLockConfig().batchRemoveSummaryMessage(
+                summary.removedPlayers(),
+                summary.notFoundPlayers(),
+                summary.ownerDeniedPlayers()
+        ));
         return true;
     }
 
@@ -181,6 +188,48 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
 
     private String normalizeTargetPlayer(Player actor, String targetPlayer) {
         return new LockPlayerNameNormalizer(plugin.getPlayerIdentityService()).normalize(actor, targetPlayer);
+    }
+
+    private LockBatchTargetParser batchTargetParser() {
+        return new LockBatchTargetParser();
+    }
+
+    private LockBatchAuthorizationService batchAuthorizationService() {
+        return new LockBatchAuthorizationService(plugin.getLockService(), new LockPlayerNameNormalizer(plugin.getPlayerIdentityService()));
+    }
+
+    private boolean sendSingleAddResult(CommandSender sender, LockBatchAuthorizationService.BatchAddSummary summary) {
+        if (!summary.addedPlayers().isEmpty()) {
+            String playerName = summary.addedPlayers().get(0);
+            if (summary.addedWithExtensionPlayers().contains(playerName)) {
+                sender.sendMessage(plugin.getSignLockConfig().extensionCreatedMessage());
+            }
+            sender.sendMessage(plugin.getSignLockConfig().addSuccessMessage(playerName));
+            return true;
+        }
+        if (!summary.alreadyAuthorizedPlayers().isEmpty()) {
+            sender.sendMessage(plugin.getSignLockConfig().addAlreadyAuthorizedMessage(summary.alreadyAuthorizedPlayers().get(0)));
+            return true;
+        }
+        sender.sendMessage(plugin.getSignLockConfig().addListFullMessage());
+        return true;
+    }
+
+    private boolean sendSingleRemoveResult(CommandSender sender, LockBatchAuthorizationService.BatchRemoveSummary summary) {
+        if (!summary.removedPlayers().isEmpty()) {
+            sender.sendMessage(plugin.getSignLockConfig().removeSuccessMessage(summary.removedPlayers().get(0)));
+            return true;
+        }
+        if (!summary.ownerDeniedPlayers().isEmpty()) {
+            sender.sendMessage(plugin.getSignLockConfig().removeOwnerDeniedMessage());
+            return true;
+        }
+        sender.sendMessage(plugin.getSignLockConfig().removeNotFoundMessage(summary.notFoundPlayers().get(0)));
+        return true;
+    }
+
+    private String joinTargets(String[] args) {
+        return String.join(" ", Arrays.copyOfRange(args, 1, args.length)).trim();
     }
 
     private TargetedLock getTargetedLock(Player player) {

@@ -10,6 +10,8 @@ import ym.signLock.listener.LockGuiChatInputListener;
 import ym.signLock.listener.LockGuiListener;
 import ym.signLock.listener.LockListener;
 import ym.signLock.listener.PlayerIdentityListener;
+import ym.signLock.service.LockBatchAuthorizationService;
+import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
@@ -34,10 +36,14 @@ public final class SignLock extends JavaPlugin {
         lockService = new LockService(signLockConfig, playerIdentityService);
 
         LockPlayerNameNormalizer playerNameNormalizer = new LockPlayerNameNormalizer(playerIdentityService);
+        LockBatchTargetParser batchTargetParser = new LockBatchTargetParser();
+        LockBatchAuthorizationService batchAuthorizationService = new LockBatchAuthorizationService(lockService, playerNameNormalizer);
         LockManagementPendingInputStore pendingInputStore = new LockManagementPendingInputStore();
         lockManagementGuiService = new LockManagementGuiService(lockService, signLockConfig);
         lockManagementGuiActionService = new LockManagementGuiActionService(
                 lockService,
+                batchTargetParser,
+                batchAuthorizationService,
                 playerNameNormalizer,
                 lockManagementGuiService,
                 pendingInputStore,

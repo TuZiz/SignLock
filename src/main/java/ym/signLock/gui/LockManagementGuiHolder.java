@@ -4,14 +4,17 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class LockManagementGuiHolder implements InventoryHolder {
 
     private final LockManagementSession session;
     private final LockSummaryView view;
     private final Map<Integer, String> removablePlayersBySlot = new HashMap<>();
+    private final Set<String> selectedPlayers = new LinkedHashSet<>();
     private Inventory inventory;
 
     public LockManagementGuiHolder(LockManagementSession session, LockSummaryView view) {
@@ -42,5 +45,33 @@ public final class LockManagementGuiHolder implements InventoryHolder {
 
     public String removablePlayerAt(int rawSlot) {
         return removablePlayersBySlot.get(rawSlot);
+    }
+
+    public void toggleSelectedPlayer(int rawSlot) {
+        String playerName = removablePlayerAt(rawSlot);
+        if (playerName == null) {
+            return;
+        }
+
+        if (!selectedPlayers.add(playerName)) {
+            selectedPlayers.remove(playerName);
+        }
+    }
+
+    public boolean isSelected(int rawSlot) {
+        String playerName = removablePlayerAt(rawSlot);
+        return playerName != null && selectedPlayers.contains(playerName);
+    }
+
+    public Set<String> selectedPlayers() {
+        return Set.copyOf(selectedPlayers);
+    }
+
+    public int selectedCount() {
+        return selectedPlayers.size();
+    }
+
+    public boolean hasSelection() {
+        return !selectedPlayers.isEmpty();
     }
 }
