@@ -144,14 +144,14 @@ public final class LockListener implements Listener {
         Block block = event.getBlock();
 
         LockInfo directLock = lockService.findLock(block);
-        if (directLock != null && !lockService.canAccess(directLock, player)) {
+        if (directLock != null && !lockService.canBreak(directLock, player)) {
             event.setCancelled(true);
             player.sendMessage(config.protectedBlockMessage());
             return;
         }
 
         LockInfo signLock = lockService.findManagedSignLock(block);
-        if (signLock != null && !lockService.canAccess(signLock, player)) {
+        if (signLock != null && !lockService.canBreak(signLock, player)) {
             event.setCancelled(true);
             player.sendMessage(config.protectedSignMessage());
         }

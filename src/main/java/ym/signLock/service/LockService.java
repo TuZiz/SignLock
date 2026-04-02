@@ -136,8 +136,16 @@ public final class LockService {
                 || matchesIdentity(lock.owner(), player);
     }
 
-    public boolean isExplosionProtected(Block block) {
+    public boolean canBreak(LockInfo lock, Player player) {
+        return canManage(lock, player);
+    }
+
+    public boolean isProtectedStructure(Block block) {
         return findLock(block) != null || findManagedSignLock(block) != null;
+    }
+
+    public boolean isExplosionProtected(Block block) {
+        return isProtectedStructure(block);
     }
 
     public boolean isManagedLockSign(Block block) {
@@ -145,7 +153,7 @@ public final class LockService {
     }
 
     public boolean isProtectedAutomationTarget(Block block) {
-        return findLock(block) != null;
+        return isProtectedStructure(block);
     }
 
     public boolean isAuthorizedOnLock(LockInfo lock, String playerName) {
