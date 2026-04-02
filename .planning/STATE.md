@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-04-02T04:29:43.275Z"
+last_activity: 2026-04-02
+progress:
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -5,20 +21,21 @@
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** 玩家贴上牌子后，受保护方块必须稳定、可预期地只允许主人和已授权玩家访问。
-**Current focus:** Phase 1 - Lock Target Correctness
+**Current focus:** Phase 01 — lock-target-correctness
 
 ## Current Position
 
-Phase: 1 of 3 (Lock Target Correctness)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-04-02 - Initialized GSD planning context for the existing SignLock codebase
+Phase: 01 (lock-target-correctness) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-02
 
 Progress: [░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: -
 - Total execution time: 0.0 hours
@@ -32,8 +49,11 @@ Progress: [░░░░░] 0%
 | 3 | 0 | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: -
 - Trend: Stable
+
+| Phase 01 P01 | 13min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -44,6 +64,8 @@ Recent decisions affecting current work:
 
 - [Init] 按 brownfield 项目初始化，而不是把现有插件当作新项目重建。
 - [Init] 当前里程碑优先解决锁语义正确性、中文资源质量和发布验证基线。
+- [Phase 01]: Double chest canonical block is selected deterministically by stable coordinate ordering so LockInfo.targetBlock() no longer depends on clicked half.
+- [Phase 01]: Managed-sign lookup and extension flows now reuse findPlacementTarget/findLock semantics instead of separate attached-block rules.
 
 ### Pending Todos
 
@@ -56,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02 00:00
-Stopped at: Project initialized and ready for Phase 1 discussion/planning
+Last session: 2026-04-02T04:29:43.272Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
