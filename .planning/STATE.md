@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-02T04:29:43.275Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-02T04:40:18.584Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 01 (lock-target-correctness) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-02
 
@@ -54,6 +54,7 @@ Progress: [░░░░░] 0%
 - Trend: Stable
 
 | Phase 01 P01 | 13min | 2 tasks | 4 files |
+| Phase 01 P02 | 20min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,7 @@ Recent decisions affecting current work:
 - [Init] 当前里程碑优先解决锁语义正确性、中文资源质量和发布验证基线。
 - [Phase 01]: Double chest canonical block is selected deterministically by stable coordinate ordering so LockInfo.targetBlock() no longer depends on clicked half.
 - [Phase 01]: Managed-sign lookup and extension flows now reuse findPlacementTarget/findLock semantics instead of separate attached-block rules.
+- [Phase 01]: D-07 remains in force: locked-use and locked-container stay as separate prompts even though they share the same canonical target decision chain.
 
 ### Pending Todos
 
@@ -78,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T04:29:43.272Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-02T04:40:18.581Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

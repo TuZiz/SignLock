@@ -14,8 +14,8 @@
 
 ### Protection
 
-- [ ] **PROT-01**: 未授权玩家尝试右键使用已上锁方块时会被稳定拦截并收到正确提示。
-- [ ] **PROT-02**: 未授权玩家尝试打开已上锁容器时会被稳定拦截，包括双箱和其他 `InventoryHolder` 路径。
+- [x] **PROT-01**: 未授权玩家尝试右键使用已上锁方块时会被稳定拦截并收到正确提示。
+- [x] **PROT-02**: 未授权玩家尝试打开已上锁容器时会被稳定拦截，包括双箱和其他 `InventoryHolder` 路径。
 - [ ] **PROT-03**: 未授权玩家不能破坏受保护方块本体或别人的锁牌。
 - [ ] **PROT-04**: 自动化搬运、爆炸、活塞和流体不能绕过现有锁保护破坏或操作锁目标。
 
@@ -59,8 +59,8 @@
 | LOCK-02 | Phase 1 | Complete |
 | LOCK-03 | Phase 1 | Complete |
 | LOCK-04 | Phase 1 | Pending |
-| PROT-01 | Phase 1 | Pending |
-| PROT-02 | Phase 1 | Pending |
+| PROT-01 | Phase 1 | Complete |
+| PROT-02 | Phase 1 | Complete |
 | PROT-03 | Phase 2 | Pending |
 | PROT-04 | Phase 2 | Pending |
 | OPS-01 | Phase 3 | Pending |
