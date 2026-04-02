@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Lock Target Correctness** - Fix canonical lock ownership and shared-target behavior for single containers, double chests, and managed signs.
 - [x] **Phase 2: Authorization & Protection Matrix** - Close authorization, break protection, automation protection, and identity-resolution gaps so all core entrypoints behave consistently.
-- [ ] **Phase 3: Localization & Release Readiness** - Repair default Chinese resources and establish the final release and smoke-validation baseline.
+- [x] **Phase 3: Localization & Release Readiness** - Repair default Chinese resources and establish the final release and smoke-validation baseline.
 
 ## Phase Details
 
@@ -62,9 +62,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01 - Repair garbled Chinese text in resources and metadata.
-- [ ] 03-02 - Produce release-checklist and validation-matrix documentation.
-- [ ] 03-03 - Run final build and compatibility verification before release.
+- [x] 03-01 - Repair garbled Chinese text in resources and metadata.
+- [x] 03-02 - Produce release-checklist and validation-matrix documentation.
+- [x] 03-03 - Run final build and compatibility verification before release.
 
 ## Progress
 
@@ -75,4 +75,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Lock Target Correctness | 3/3 | Complete | 2026-04-02 |
 | 2. Authorization & Protection Matrix | 3/3 | Complete | 2026-04-02 |
-| 3. Localization & Release Readiness | 0/3 | Not started | - |
+| 3. Localization & Release Readiness | 3/3 | Complete | 2026-04-02 |
