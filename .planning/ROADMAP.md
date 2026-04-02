@@ -30,9 +30,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: 梳理主锁牌、扩展牌与单双箱共享目标的归一化规则。
-- [ ] 01-02: 对交互与开箱入口做一致化修复并补最小验证覆盖。
-- [ ] 01-03: 收口牌子编辑与扩展牌创建逻辑，避免结构性回归。
+- [ ] 01-01-PLAN.md - 安装 MockBukkit 回归底座并在 `LockService` 内收口 canonical target 与共享扩展牌语义。
+- [ ] 01-02-PLAN.md - 修复 `LockListener` 的右键、开箱与自动化入口，使其全部复用共享目标判定。
+- [ ] 01-03-PLAN.md - 收口主锁/扩展牌贴牌与锁牌编辑结构保护，避免共享目标与系统控制行回归。
 
 ### Phase 2: Authorization & Protection Matrix
 **Goal**: 让授权管理、破坏保护、自动化保护和身份解析覆盖整个保护矩阵。
