@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 Initial Release** - Phases 1-3 shipped on 2026-04-02. Archive: `.planning/milestones/v1.0-ROADMAP.md`
-- [ ] **v1.1 Modern UX** - Phase 4 shipped on 2026-04-02; Phases 5-6 remain planned. Focus: GUI management, batch authorization, and clearer lock insight.
+- [ ] **v1.1 Modern UX** - Phases 4-5 shipped on 2026-04-02; Phase 6 remains planned. Focus: GUI management, batch authorization, and clearer lock insight.
 
 ## Current Milestone
 
@@ -32,6 +32,11 @@ Plans:
 3. GUI and command flows preserve the same ownership and authorization semantics.
 **Plans**: 3 plans
 
+Plans:
+- [x] 05-01-PLAN.md - shared batch parser / orchestration baseline
+- [x] 05-02-PLAN.md - single-page GUI batch add/remove flow
+- [x] 05-03-PLAN.md - batch command compatibility / regression closeout
+
 ### Phase 6: Visual Lock Insights & Safety
 **Goal**: Make lock state easier to understand and complete the regression and safety coverage for the new UX paths.  
 **Depends on**: Phase 5  
@@ -50,7 +55,7 @@ Plans:
 | 2. Authorization & Protection Matrix | v1.0 | 3/3 | Complete | 2026-04-02 |
 | 3. Localization & Release Readiness | v1.0 | 3/3 | Complete | 2026-04-02 |
 | 4. GUI Lock Management | v1.1 | 3/3 | Complete | 2026-04-02 |
-| 5. Batch Authorization Flows | v1.1 | 0/3 | Not started | - |
+| 5. Batch Authorization Flows | v1.1 | 3/3 | Complete | 2026-04-02 |
 | 6. Visual Lock Insights & Safety | v1.1 | 0/3 | Not started | - |
 
 ---
