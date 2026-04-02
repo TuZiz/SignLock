@@ -46,7 +46,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: 整理命令授权链与玩家身份缓存行为。
+- [x] 02-01: 整理命令授权链与玩家身份缓存行为。
 - [ ] 02-02: 对破坏、爆炸、活塞、流体、自动化等保护事件做一致性核对。
 - [ ] 02-03: 补充回归验证步骤并修正边缘条件。
 
@@ -73,6 +73,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Lock Target Correctness | 0/3 | Not started | - |
-| 2. Authorization & Protection Matrix | 0/3 | Not started | - |
+| 1. Lock Target Correctness | 3/3 | Complete | 2026-04-02 |
+| 2. Authorization & Protection Matrix | 1/3 | In Progress | 2026-04-02 |
 | 3. Localization & Release Readiness | 0/3 | Not started | - |
