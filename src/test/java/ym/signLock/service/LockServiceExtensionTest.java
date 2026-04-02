@@ -44,7 +44,7 @@ class LockServiceExtensionTest {
         Block rightHalf = world.getBlockAt(1, 64, 0);
         configureDoubleChest(leftHalf, rightHalf, BlockFace.NORTH);
         placeWallSign(leftHalf, BlockFace.NORTH, "[private]", "Owner", "", "");
-        Sign extension = placeWallSign(rightHalf, BlockFace.SOUTH, "[more users]", "Alice", "", "");
+        Sign extension = placeWallSign(rightHalf, BlockFace.NORTH, "[more users]", "Alice", "", "");
 
         LockService.LockInfo leftLock = lockService.findLock(leftHalf);
         LockService.LockInfo rightLock = lockService.findLock(rightHalf);
@@ -65,7 +65,7 @@ class LockServiceExtensionTest {
         Block rightHalf = world.getBlockAt(11, 64, 0);
         configureDoubleChest(leftHalf, rightHalf, BlockFace.NORTH);
         placeWallSign(leftHalf, BlockFace.NORTH, "[private]", "Owner", "", "");
-        Sign preferredExtension = placeWallSign(rightHalf, BlockFace.SOUTH, "[more users]", "", "", "");
+        Sign preferredExtension = placeWallSign(rightHalf, BlockFace.NORTH, "[more users]", "", "", "");
 
         LockService.LockInfo lockFromLeft = lockService.findLock(leftHalf);
         LockService.LockInfo lockFromRight = lockService.findLock(rightHalf);
@@ -118,7 +118,7 @@ class LockServiceExtensionTest {
             sign.setLine(index, lines[index]);
         }
         sign.update(true, false);
-        return sign;
+        return (Sign) signBlock.getState();
     }
 
     private String coords(Block block) {

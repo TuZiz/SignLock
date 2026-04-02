@@ -133,7 +133,7 @@ class LockServiceCanonicalTargetTest {
             sign.setLine(index, lines[index]);
         }
         sign.update(true, false);
-        return sign;
+        return (Sign) signBlock.getState();
     }
 
     private String coords(Block block) {
