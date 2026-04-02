@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Initial Release
-status: ready_for_next_milestone
-stopped_at: Milestone v1.0 archived
-last_updated: "2026-04-02T10:45:00.000Z"
+milestone: v1.1
+milestone_name: Modern UX
+status: defining_requirements
+stopped_at: Milestone v1.1 started
+last_updated: "2026-04-02T11:00:00.000Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 3
@@ -21,12 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** 稳定、可预期地只允许锁主人与已授权玩家访问受保护目标。  
-**Current focus:** Planning next milestone
+**Current focus:** Defining v1.1 requirements and roadmap
 
 ## Current Position
 
-Milestone: v1.0 Initial Release - ARCHIVED
-Status: Ready for next milestone
+Milestone: v1.1 Modern UX
+Phase: Not started
+Plan: -
+Status: Defining requirements
 Last activity: 2026-04-02
 
 Progress: [#####] 100%
@@ -41,8 +43,9 @@ Progress: [#####] 100%
 
 ### Pending Todos
 
-- 定义下一里程碑需求
-- 评估 GUI / 批量授权 / 审计面板等 backlog
+- 定义 GUI 锁管理需求
+- 定义批量授权 / 批量移除需求
+- 定义锁信息可视化需求
 
 ### Blockers/Concerns
 
@@ -51,6 +54,6 @@ Progress: [#####] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-02T10:45:00.000Z
-Stopped at: Milestone v1.0 archived
+Last session: 2026-04-02T11:00:00.000Z
+Stopped at: Milestone v1.1 started
 Resume file: None
