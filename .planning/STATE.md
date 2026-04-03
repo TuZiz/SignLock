@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Modern UX
-status: ready_for_closeout
-stopped_at: Phase 6 complete
-last_updated: "2026-04-03T07:30:00.000Z"
-last_activity: 2026-04-03 -- Phase 06 completed
+status: awaiting_next_milestone
+stopped_at: v1.1 milestone archived
+last_updated: "2026-04-03T08:10:00.000Z"
+last_activity: 2026-04-03 -- completed v1.1 milestone archive
 progress:
   total_phases: 3
   completed_phases: 3
@@ -18,19 +18,16 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-02)
+See: `.planning/PROJECT.md` (updated 2026-04-03)
 
-**Core value:** Stable, predictable sign-backed protection with clear Chinese defaults and modern operator/player UX.  
-**Current focus:** Milestone closeout for v1.1 Modern UX
+**Core value:** Stable, predictable protection with clear lock-state visibility and modern operator/player UX.  
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: 06 (visual-lock-insights-safety) - COMPLETE  
-Plan: 3 of 3  
-Milestone: v1.1 Modern UX  
-Completed phase: 06 (visual-lock-insights-safety)  
-Status: Ready for milestone closeout  
-Last activity: 2026-04-03 -- Phase 06 completed
+Milestone: v1.1 Modern UX - ARCHIVED  
+Status: Waiting for next milestone definition  
+Last activity: 2026-04-03 -- v1.1 archived and tagged locally
 
 Progress: [#####] 100%
 
@@ -38,23 +35,22 @@ Progress: [#####] 100%
 
 ### Decisions
 
-- Keep the brownfield sign-backed data model and v1.0 shared-target semantics intact.
-- Owner normal right-click opens the GUI; sneak-right-click remains the native sign editor fallback.
-- Phase 5 upgrades authorization to batch flows while preserving the single-page GUI and legacy `/bl` command compatibility.
-- Phase 6 adds viewer-aware lock summaries, `/bl info` parity, and explicit safety closeout coverage.
+- Shared-target lock semantics remain the permanent base rule.
+- GUI, batch flows, and `/bl info` now share one summary contract.
+- Compatibility with sign-backed data and legacy `/bl` flows remains non-negotiable.
 
 ### Pending Todos
 
-- Run or waive the documented Paper/Folia smoke checklist.
-- Close out the v1.1 milestone archive once release confidence is sufficient.
+- Decide the scope of the next milestone.
+- Run or explicitly waive the documented Paper/Folia smoke checklist if release policy requires it.
 
 ### Blockers/Concerns
 
-- Real-client Paper/Folia smoke checks are still recommended before milestone archive, especially for GUI readability and thread-safety confidence.
-- `plugin.yml` and some earlier Phase 1 artifacts already had unrelated working-tree changes and were intentionally left untouched.
+- `plugin.yml`, `.planning/config.json`, and early Phase 1 artifacts still contain unrelated working-tree changes that were intentionally left outside the milestone archive commit.
+- No standalone v1.1 milestone audit was run before archival; closeout is based on phase verification artifacts.
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:30:00.000Z  
-Stopped at: Phase 6 complete  
-Resume file: `.planning/phases/06-visual-lock-insights-safety/06-VERIFICATION.md`
+Last session: 2026-04-03T08:10:00.000Z  
+Stopped at: v1.1 milestone complete  
+Resume file: `.planning/MILESTONES.md`
