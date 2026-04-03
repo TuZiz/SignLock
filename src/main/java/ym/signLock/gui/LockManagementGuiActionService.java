@@ -42,6 +42,21 @@ public final class LockManagementGuiActionService {
     }
 
     public void handleClick(Player player, LockManagementGuiHolder holder, int rawSlot) {
+        if (rawSlot == LockManagementGui.REFRESH_SLOT) {
+            guiService.openFor(player, holder.session());
+            return;
+        }
+
+        if (rawSlot == LockManagementGui.CLOSE_SLOT) {
+            player.closeInventory();
+            return;
+        }
+
+        if (holder.readOnly()) {
+            player.sendMessage(config.guiReadOnlyMessage());
+            return;
+        }
+
         if (rawSlot == LockManagementGui.ADD_SLOT) {
             pendingInputStore.beginAdd(player.getUniqueId(), holder.session());
             player.closeInventory();
@@ -49,18 +64,8 @@ public final class LockManagementGuiActionService {
             return;
         }
 
-        if (rawSlot == LockManagementGui.REFRESH_SLOT) {
-            guiService.openFor(player, holder.session());
-            return;
-        }
-
         if (rawSlot == LockManagementGui.REMOVE_SELECTED_SLOT) {
             removeSelectedPlayers(player, holder);
-            return;
-        }
-
-        if (rawSlot == LockManagementGui.CLOSE_SLOT) {
-            player.closeInventory();
             return;
         }
 

@@ -17,10 +17,11 @@ import ym.signLock.service.PlayerIdentityService;
 import java.util.List;
 import java.util.Set;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class SignLockCommandCompatibilityTest {
+class SignLockCommandInfoCompatibilityTest {
 
     private final SignLock plugin = Mockito.mock(SignLock.class);
     private final LockService lockService = Mockito.mock(LockService.class);
@@ -44,60 +45,33 @@ class SignLockCommandCompatibilityTest {
         when(plugin.getLockService()).thenReturn(lockService);
         when(plugin.getPlayerIdentityService()).thenReturn(playerIdentityService);
 
-        when(player.hasPermission("signlock.add")).thenReturn(true);
         when(player.getTargetBlockExact(6)).thenReturn(targetBlock);
         when(targetBlock.getType()).thenReturn(Material.OAK_WALL_SIGN);
         when(targetBlock.getState()).thenReturn(targetSign);
         when(targetSign.getBlock()).thenReturn(targetBlock);
-
         when(lockService.findManagedSignLock(targetBlock)).thenReturn(lockInfo);
-        when(lockService.canManage(lockInfo, player)).thenReturn(true);
     }
 
     @Test
-    void addStillWorksAfterSharedNormalizerExtraction() {
-        when(playerIdentityService.resolveStoredName("oldname")).thenReturn("CurrentName");
-        when(lockService.addPlayerToLock(targetSign, lockInfo, "CurrentName")).thenReturn(LockService.AddPlayerResult.ADDED);
-
-        signLockCommand.onCommand(player, command, "signlock", new String[]{"add", "oldname"});
-
-        verify(lockService).addPlayerToLock(targetSign, lockInfo, "CurrentName");
-        verify(player).sendMessage(config.addSuccessMessage("CurrentName"));
-    }
-
-    @Test
-    void removeStillWorksAfterSharedNormalizerExtraction() {
-        when(playerIdentityService.resolveStoredName("oldname")).thenReturn("CurrentName");
-        when(lockService.removePlayerFromLock(targetSign, lockInfo, "CurrentName"))
-                .thenReturn(LockService.RemovePlayerResult.REMOVED);
-
-        signLockCommand.onCommand(player, command, "signlock", new String[]{"remove", "oldname"});
-
-        verify(lockService).removePlayerFromLock(targetSign, lockInfo, "CurrentName");
-        verify(player).sendMessage(config.removeSuccessMessage("CurrentName"));
-    }
-
-    @Test
-    void infoStillShowsLockSummary() {
+    void infoHidesAuthorizedRosterForDeniedViewersButKeepsSharedSummaryLanguage() {
         LockService.LockDetails details = new LockService.LockDetails(
                 "Owner",
                 List.of("CurrentName"),
-                1,
-                new LockService.LockTargetDetails("CHEST", "world", 0, 64, 0, LockService.LockTargetKind.SINGLE_CHEST)
+                2,
+                new LockService.LockTargetDetails("CHEST", "world", 3, 70, 9, LockService.LockTargetKind.DOUBLE_CHEST)
         );
         when(lockService.describeLock(targetBlock)).thenReturn(details);
-        when(lockService.viewerScope(lockInfo, player)).thenReturn(LockService.LockViewerScope.MANAGE);
+        when(lockService.viewerScope(lockInfo, player)).thenReturn(LockService.LockViewerScope.DENIED);
 
         signLockCommand.onCommand(player, command, "signlock", new String[]{"info"});
 
-        verify(lockService).findManagedSignLock(targetBlock);
-        verify(lockService).describeLock(targetBlock);
         verify(player).sendMessage(config.infoHeaderMessage());
         verify(player).sendMessage(config.infoOwnerMessage("Owner"));
-        verify(player).sendMessage(config.infoScopeMessage(config.scopeManageLabel()));
-        verify(player).sendMessage(config.infoTargetMessage(config.summarySingleChestTargetLabel("world", 0, 64, 0)));
-        verify(player).sendMessage(config.infoPlayersMessage("CurrentName"));
-        verify(player).sendMessage(config.infoExtensionsMessage(1));
+        verify(player).sendMessage(config.infoScopeMessage(config.scopeDeniedLabel()));
+        verify(player).sendMessage(config.infoTargetMessage(config.summaryDoubleChestTargetLabel("world", 3, 70, 9)));
+        verify(player).sendMessage(config.infoPlayersHiddenMessage());
+        verify(player, never()).sendMessage(config.infoPlayersMessage("CurrentName"));
+        verify(player).sendMessage(config.infoExtensionsMessage(2));
     }
 
     private SignLockConfig createConfig() {
@@ -107,17 +81,16 @@ class SignLockCommandCompatibilityTest {
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
         yaml.set("protection.lockable-materials", List.of("CHEST", "BARREL"));
-        yaml.set("messages.add-success", "&aadd-success %player%");
-        yaml.set("messages.remove-success", "&aremove-success %player%");
         yaml.set("messages.info-header", "&6info-header");
         yaml.set("messages.info-owner", "&eowner %owner%");
         yaml.set("messages.info-players", "&eplayers %players%");
+        yaml.set("messages.info-players-hidden", "&ehidden");
         yaml.set("messages.info-no-players", "&enobody");
         yaml.set("messages.info-scope", "&escope %scope%");
         yaml.set("messages.info-target", "&etarget %target%");
         yaml.set("messages.info-extensions", "&eextensions %count%");
-        yaml.set("messages.scope-manage-label", "manage");
-        yaml.set("messages.target-summary-single-chest", "single chest %world% %x% %y% %z%");
+        yaml.set("messages.scope-denied-label", "denied");
+        yaml.set("messages.target-summary-double-chest", "double chest %world% %x% %y% %z%");
         return new SignLockConfig(yaml);
     }
 }

@@ -13,6 +13,7 @@ import java.util.Set;
 
 public final class SignLockConfig {
 
+    private final FileConfiguration backingConfig;
     private final String lockHeader;
     private final String moreUsersHeader;
     private final boolean protectExplosions;
@@ -76,6 +77,7 @@ public final class SignLockConfig {
     private final String batchRemoveSummaryMessage;
 
     public SignLockConfig(FileConfiguration config) {
+        this.backingConfig = config;
         this.lockHeader = normalizeHeader(config.getString("signs.lock-header", "[锁]"));
         this.moreUsersHeader = normalizeHeader(config.getString("signs.more-users-header", "[更多用户]"));
         this.protectExplosions = config.getBoolean("protection.explosions", true);
@@ -83,60 +85,61 @@ public final class SignLockConfig {
         this.maxMoreUserSigns = Math.max(0, config.getInt("protection.max-more-user-signs", 4));
         this.extensionPlacementOrder = loadPlacementOrder(config.getStringList("protection.extension-placement-order"));
         this.lockableMaterials = loadLockableMaterials(config.getStringList("protection.lockable-materials"));
-        this.lockedUseMessage = color(config.getString("messages.locked-use", "&c你无权使用这个已上锁的方块。"));
-        this.lockedContainerMessage = color(config.getString("messages.locked-container", "&c你无权打开这个已上锁的容器。"));
-        this.protectedBlockMessage = color(config.getString("messages.protected-block", "&c这个方块已被牌子锁保护。"));
-        this.protectedSignMessage = color(config.getString("messages.protected-sign", "&c你不能破坏别人的锁牌。"));
-        this.invalidLockPlacementMessage = color(config.getString("messages.invalid-lock-placement", "&c请把牌子放在可上锁方块旁边。"));
-        this.alreadyProtectedMessage = color(config.getString("messages.already-protected", "&c这个方块已经上锁了。"));
-        this.lockCreatedMessage = color(config.getString("messages.lock-created", "&a已为 &f%block% &a创建牌子锁。"));
-        this.lockUsageHintMessage = color(config.getString("messages.lock-usage-hint", "&7右键自己的锁牌可手动编辑玩家，或使用 /bl add、/bl remove 管理授权。"));
-        this.invalidMoreUsersPlacementMessage = color(config.getString("messages.invalid-more-users-placement", "&c请把牌子放在已上锁方块旁边。"));
-        this.missingPrimaryLockMessage = color(config.getString("messages.missing-primary-lock", "&c[更多用户] 牌子必须依附在已有锁牌的方块上。"));
-        this.ownerOnlyMoreUsersMessage = color(config.getString("messages.owner-only-more-users", "&c只有所有者才能添加额外授权牌。"));
-        this.extraUsersAttachedMessage = color(config.getString("messages.extra-users-attached", "&a已添加额外授权牌。"));
-        this.reloadSuccessMessage = color(config.getString("messages.reload-success", "&aSignLock 配置已重载。"));
-        this.reloadUsageMessage = color(config.getString("messages.reload-usage", "&e用法: /signlock reload"));
-        this.noPermissionMessage = color(config.getString("messages.no-permission", "&c你没有权限执行此操作。"));
-        this.addUsageMessage = color(config.getString("messages.add-usage", "&e用法: /bl add <玩家名>"));
-        this.removeUsageMessage = color(config.getString("messages.remove-usage", "&e用法: /bl remove <玩家名>"));
-        this.infoUsageMessage = color(config.getString("messages.info-usage", "&e用法: /bl info"));
-        this.addSuccessMessage = color(config.getString("messages.add-success", "&a已将 &f%player% &a加入这个锁。"));
-        this.addAlreadyAuthorizedMessage = color(config.getString("messages.add-already-authorized", "&e%player% 已经拥有这个锁的权限。"));
-        this.addListFullMessage = color(config.getString("messages.add-list-full", "&c授权牌已满，且无法继续生成新的扩展牌。"));
-        this.addInvalidSignMessage = color(config.getString("messages.add-invalid-sign", "&c请把准星对准一个有效的锁牌。"));
-        this.addOnlyOwnerMessage = color(config.getString("messages.add-only-owner", "&c只有所有者才能给这个锁添加玩家。"));
-        this.addPlayerNotFoundMessage = color(config.getString("messages.add-player-not-found", "&c请输入要添加的玩家名。"));
-        this.removeSuccessMessage = color(config.getString("messages.remove-success", "&a已从这个锁中移除 &f%player%&a。"));
-        this.removeNotFoundMessage = color(config.getString("messages.remove-not-found", "&e这个锁里没有玩家 &f%player%&e。"));
-        this.removeOwnerDeniedMessage = color(config.getString("messages.remove-owner-denied", "&c不能移除锁的所有者。"));
-        this.directLockNoSpaceMessage = color(config.getString("messages.direct-lock-no-space", "&c附近没有可放置锁牌的位置，请腾出一个侧面空间。"));
-        this.infoHeaderMessage = color(config.getString("messages.info-header", "&6[SignLock] 锁信息"));
-        this.infoOwnerMessage = color(config.getString("messages.info-owner", "&e所有者: &f%owner%"));
-        this.infoPlayersMessage = color(config.getString("messages.info-players", "&e授权玩家: &f%players%"));
-        this.infoNoPlayersMessage = color(config.getString("messages.info-no-players", "&e授权玩家: &f无"));
-        this.infoExtensionsMessage = color(config.getString("messages.info-extensions", "&e扩展牌数量: &f%count%"));
-        this.automationBlockedMessage = color(config.getString("messages.automation-blocked", "&c自动化装置无法操作已上锁容器。"));
-        this.signEditDeniedMessage = color(config.getString("messages.sign-edit-denied", "&c你不能修改别人的锁牌内容。"));
-        this.extensionCreatedMessage = color(config.getString("messages.extension-created", "&a已自动生成新的扩展牌。"));
-        this.guiTitle = color(config.getString("messages.gui-title", "&8SignLock 管理"));
-        this.guiOwnerLabel = color(config.getString("messages.gui-owner-label", "&e所有者: &f%owner%"));
-        this.guiTargetLabel = color(config.getString("messages.gui-target-label", "&e保护目标: &f%block% &7(%world% %x%, %y%, %z%)"));
-        this.guiExtensionsLabel = color(config.getString("messages.gui-extensions-label", "&e扩展牌数量: &f%count%"));
-        this.guiNoPlayersLabel = color(config.getString("messages.gui-no-players-label", "&7当前还没有额外授权玩家"));
-        this.guiAddButtonLabel = color(config.getString("messages.gui-add-button", "&a添加授权"));
-        this.guiRefreshButtonLabel = color(config.getString("messages.gui-refresh-button", "&e刷新界面"));
-        this.guiCloseButtonLabel = color(config.getString("messages.gui-close-button", "&c关闭"));
-        this.guiRemoveHintLine = color(config.getString("messages.gui-remove-hint-line", "&7点击切换是否加入批量移除"));
-        this.guiSelectHintLine = color(config.getString("messages.gui-select-hint-line", "&e点击选择"));
-        this.guiSelectedHintLine = color(config.getString("messages.gui-selected-hint-line", "&c已选中，点击可取消"));
-        this.guiRemoveSelectedButtonLabel = color(config.getString("messages.gui-remove-selected-button", "&c移除选中(&f%count%&c)"));
-        this.guiRemoveSelectedHintLine = color(config.getString("messages.gui-remove-selected-hint-line", "&7确认移除当前已选中的玩家"));
-        this.guiAddPromptMessage = color(config.getString("messages.gui-add-prompt", "&e在聊天栏输入要添加的玩家名，可用空格或逗号分隔，输入 cancel 取消。"));
-        this.guiAddCancelledMessage = color(config.getString("messages.gui-add-cancelled", "&7已取消添加授权。"));
-        this.guiRemoveSelectionEmptyMessage = color(config.getString("messages.gui-remove-selection-empty", "&e请先选中至少一名玩家。"));
-        this.batchAddSummaryMessage = color(config.getString("messages.batch-add-summary", "&a批量添加完成: &f成功 %added_count%(%added%) &7| 已有权限 %already_count%(%already%) &7| 无空间 %no_space_count%(%no_space%)"));
-        this.batchRemoveSummaryMessage = color(config.getString("messages.batch-remove-summary", "&a批量移除完成: &f成功 %removed_count%(%removed%) &7| 未找到 %not_found_count%(%not_found%) &7| 不可移除 %owner_denied_count%(%owner_denied%)"));
+
+        this.lockedUseMessage = message("messages.locked-use", "&c你没有权限使用这个已上锁的方块。");
+        this.lockedContainerMessage = message("messages.locked-container", "&c你没有权限打开这个已上锁的容器。");
+        this.protectedBlockMessage = message("messages.protected-block", "&c这个方块正受到牌子锁保护。");
+        this.protectedSignMessage = message("messages.protected-sign", "&c你不能破坏别人的锁牌。");
+        this.invalidLockPlacementMessage = message("messages.invalid-lock-placement", "&c请把牌子放在可上锁方块旁边。");
+        this.alreadyProtectedMessage = message("messages.already-protected", "&c这个方块已经上锁了。");
+        this.lockCreatedMessage = message("messages.lock-created", "&a已为 &f%block% &a创建牌子锁。");
+        this.lockUsageHintMessage = message("messages.lock-usage-hint", "&7右键自己的锁牌可管理权限，或使用 /bl add 与 /bl remove。");
+        this.invalidMoreUsersPlacementMessage = message("messages.invalid-more-users-placement", "&c请把牌子放在已上锁方块旁边。");
+        this.missingPrimaryLockMessage = message("messages.missing-primary-lock", "&c[更多用户] 牌子必须依附在已有主锁的方块上。");
+        this.ownerOnlyMoreUsersMessage = message("messages.owner-only-more-users", "&c只有锁主人才能添加额外授权牌。");
+        this.extraUsersAttachedMessage = message("messages.extra-users-attached", "&a已添加额外授权牌。");
+        this.reloadSuccessMessage = message("messages.reload-success", "&aSignLock 配置已重载。");
+        this.reloadUsageMessage = message("messages.reload-usage", "&e用法: /signlock reload");
+        this.noPermissionMessage = message("messages.no-permission", "&c你没有权限执行这个操作。");
+        this.addUsageMessage = message("messages.add-usage", "&e用法: /bl add <玩家名>");
+        this.removeUsageMessage = message("messages.remove-usage", "&e用法: /bl remove <玩家名>");
+        this.infoUsageMessage = message("messages.info-usage", "&e用法: /bl info");
+        this.addSuccessMessage = message("messages.add-success", "&a已将 &f%player% &a加入这把锁。");
+        this.addAlreadyAuthorizedMessage = message("messages.add-already-authorized", "&e%player% 已经拥有这把锁的权限。");
+        this.addListFullMessage = message("messages.add-list-full", "&c授权牌已满，无法继续扩展。");
+        this.addInvalidSignMessage = message("messages.add-invalid-sign", "&c请把准星对准一个有效的锁牌。");
+        this.addOnlyOwnerMessage = message("messages.add-only-owner", "&c只有锁主人才能修改这把锁的授权。");
+        this.addPlayerNotFoundMessage = message("messages.add-player-not-found", "&c请输入要添加的玩家名。");
+        this.removeSuccessMessage = message("messages.remove-success", "&a已从这把锁中移除 &f%player%&a。");
+        this.removeNotFoundMessage = message("messages.remove-not-found", "&e这把锁里没有玩家 &f%player%&e。");
+        this.removeOwnerDeniedMessage = message("messages.remove-owner-denied", "&c不能移除锁的主人。");
+        this.directLockNoSpaceMessage = message("messages.direct-lock-no-space", "&c附近没有可放置锁牌的位置，请腾出一个侧面空间。");
+        this.infoHeaderMessage = message("messages.info-header", "&6[SignLock] 锁信息");
+        this.infoOwnerMessage = message("messages.info-owner", "&e所有者: &f%owner%");
+        this.infoPlayersMessage = message("messages.info-players", "&e授权玩家: &f%players%");
+        this.infoNoPlayersMessage = message("messages.info-no-players", "&e授权玩家: &f无");
+        this.infoExtensionsMessage = message("messages.info-extensions", "&e扩展牌数量: &f%count%");
+        this.automationBlockedMessage = message("messages.automation-blocked", "&c自动化装置无法操作已上锁容器。");
+        this.signEditDeniedMessage = message("messages.sign-edit-denied", "&c你不能修改别人的锁牌内容。");
+        this.extensionCreatedMessage = message("messages.extension-created", "&a已自动生成新的扩展牌。");
+        this.guiTitle = message("messages.gui-title", "&8SignLock 管理");
+        this.guiOwnerLabel = message("messages.gui-owner-label", "&e所有者: &f%owner%");
+        this.guiTargetLabel = message("messages.gui-target-label", "&e保护目标: &f%block% &7(%world% %x%, %y%, %z%)");
+        this.guiExtensionsLabel = message("messages.gui-extensions-label", "&e扩展牌数量: &f%count%");
+        this.guiNoPlayersLabel = message("messages.gui-no-players-label", "&7当前还没有额外授权玩家");
+        this.guiAddButtonLabel = message("messages.gui-add-button", "&a添加授权");
+        this.guiRefreshButtonLabel = message("messages.gui-refresh-button", "&e刷新界面");
+        this.guiCloseButtonLabel = message("messages.gui-close-button", "&c关闭");
+        this.guiRemoveHintLine = message("messages.gui-remove-hint-line", "&7点击切换是否加入批量移除");
+        this.guiSelectHintLine = message("messages.gui-select-hint-line", "&e点击选择");
+        this.guiSelectedHintLine = message("messages.gui-selected-hint-line", "&c已选中，再点一次可取消");
+        this.guiRemoveSelectedButtonLabel = message("messages.gui-remove-selected-button", "&c移除选中(&f%count%&c)");
+        this.guiRemoveSelectedHintLine = message("messages.gui-remove-selected-hint-line", "&7确认移除当前已选中的玩家");
+        this.guiAddPromptMessage = message("messages.gui-add-prompt", "&e在聊天栏输入要添加的玩家名，可用空格或逗号分隔；输入 cancel 取消。");
+        this.guiAddCancelledMessage = message("messages.gui-add-cancelled", "&7已取消添加授权。");
+        this.guiRemoveSelectionEmptyMessage = message("messages.gui-remove-selection-empty", "&e请先选中至少一名玩家。");
+        this.batchAddSummaryMessage = message("messages.batch-add-summary", "&a批量添加完成: &f成功 %added_count%(%added%) &7| 已有权限 %already_count%(%already%) &7| 无空位 %no_space_count%(%no_space%)");
+        this.batchRemoveSummaryMessage = message("messages.batch-remove-summary", "&a批量移除完成: &f成功 %removed_count%(%removed%) &7| 未找到 %not_found_count%(%not_found%) &7| 不可移除 %owner_denied_count%(%owner_denied%)");
     }
 
     public String lockHeader() {
@@ -295,8 +298,20 @@ public final class SignLockConfig {
         return infoNoPlayersMessage;
     }
 
+    public String infoPlayersHiddenMessage() {
+        return message("messages.info-players-hidden", "&e授权玩家: &7仅对已授权玩家可见");
+    }
+
     public String infoExtensionsMessage(int count) {
         return infoExtensionsMessage.replace("%count%", Integer.toString(count));
+    }
+
+    public String infoScopeMessage(String scope) {
+        return message("messages.info-scope", "&e当前权限: &f%scope%").replace("%scope%", scope);
+    }
+
+    public String infoTargetMessage(String target) {
+        return message("messages.info-target", "&e保护目标: &f%target%").replace("%target%", target);
     }
 
     public String automationBlockedMessage() {
@@ -317,6 +332,14 @@ public final class SignLockConfig {
 
     public String guiOwnerLabel(String owner) {
         return guiOwnerLabel.replace("%owner%", owner);
+    }
+
+    public String guiScopeLabel(String scope) {
+        return message("messages.gui-scope-label", "&e当前权限: &f%scope%").replace("%scope%", scope);
+    }
+
+    public String guiTargetLabel(String targetSummary) {
+        return message("messages.gui-target-summary-label", "&e保护目标: &f%target%").replace("%target%", targetSummary);
     }
 
     public String guiTargetLabel(String blockType, String worldName, int x, int y, int z) {
@@ -348,6 +371,10 @@ public final class SignLockConfig {
         return guiCloseButtonLabel;
     }
 
+    public String guiReadOnlyButtonLabel() {
+        return message("messages.gui-read-only-button", "&7只读摘要");
+    }
+
     public String guiRemoveHintLine() {
         return guiRemoveHintLine;
     }
@@ -358,6 +385,18 @@ public final class SignLockConfig {
 
     public String guiSelectedHintLine() {
         return guiSelectedHintLine;
+    }
+
+    public String guiReadOnlyHintLine() {
+        return message("messages.gui-read-only-hint-line", "&7你可以查看这把锁，但不能修改授权。");
+    }
+
+    public String guiPlayerReadOnlyHintLine() {
+        return message("messages.gui-player-read-only-hint-line", "&7只读显示");
+    }
+
+    public String guiReadOnlyMessage() {
+        return message("messages.gui-read-only-message", "&7这个摘要面板是只读的。");
     }
 
     public String guiRemoveSelectedButtonLabel(int count) {
@@ -400,6 +439,55 @@ public final class SignLockConfig {
                 .replace("%owner_denied%", formatPlayers(ownerDeniedPlayers));
     }
 
+    public String scopeManageLabel() {
+        return message("messages.scope-manage-label", "&a可管理");
+    }
+
+    public String scopeAccessLabel() {
+        return message("messages.scope-access-label", "&e可访问");
+    }
+
+    public String scopeDeniedLabel() {
+        return message("messages.scope-denied-label", "&c未授权");
+    }
+
+    public String summarySingleChestTargetLabel(String worldName, int x, int y, int z) {
+        return formatTargetSummary(
+                backingConfig.getString("messages.target-summary-single-chest", "单箱 &7(%world% %x%, %y%, %z%)"),
+                "single chest",
+                worldName,
+                x,
+                y,
+                z
+        );
+    }
+
+    public String summaryDoubleChestTargetLabel(String worldName, int x, int y, int z) {
+        return formatTargetSummary(
+                backingConfig.getString("messages.target-summary-double-chest", "双箱共享锁 &7(%world% %x%, %y%, %z%)"),
+                "double chest",
+                worldName,
+                x,
+                y,
+                z
+        );
+    }
+
+    public String summaryGenericTargetLabel(String blockType, String worldName, int x, int y, int z) {
+        return formatTargetSummary(
+                backingConfig.getString("messages.target-summary-generic", "%block% &7(%world% %x%, %y%, %z%)"),
+                blockType,
+                worldName,
+                x,
+                y,
+                z
+        );
+    }
+
+    private String message(String path, String fallback) {
+        return color(backingConfig.getString(path, fallback));
+    }
+
     private static String normalizeHeader(String value) {
         String stripped = ChatColor.stripColor(value);
         return stripped == null ? "" : stripped.trim();
@@ -411,6 +499,15 @@ public final class SignLockConfig {
 
     private static String formatPlayers(List<String> players) {
         return players == null || players.isEmpty() ? "无" : String.join(", ", players);
+    }
+
+    private static String formatTargetSummary(String template, String blockType, String worldName, int x, int y, int z) {
+        return color(template)
+                .replace("%block%", blockType)
+                .replace("%world%", worldName)
+                .replace("%x%", Integer.toString(x))
+                .replace("%y%", Integer.toString(y))
+                .replace("%z%", Integer.toString(z));
     }
 
     private static Set<Material> loadLockableMaterials(List<String> configured) {

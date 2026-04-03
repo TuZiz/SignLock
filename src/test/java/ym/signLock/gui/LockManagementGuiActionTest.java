@@ -121,6 +121,26 @@ class LockManagementGuiActionTest {
         verify(guiService).openFor(owner, holder.session());
     }
 
+    @Test
+    void readOnlyHolderRejectsWriteClicks() {
+        Block chest = world.getBlockAt(30, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        LockService.LockInfo lock = lockService.findManagedSignLock(primary.getBlock());
+        LockService.LockDetails details = lockService.describeLock(primary.getBlock());
+        LockManagementGuiHolder holder = new LockManagementGuiHolder(
+                LockManagementSession.from(lock),
+                LockSummaryView.from(lock, details, LockService.LockViewerScope.ACCESS)
+        );
+        Player viewer = mockPlayer("Viewer");
+
+        actionService.handleClick(viewer, holder, LockManagementGui.ADD_SLOT);
+
+        assertTrue(!pendingInputStore.hasPendingAdd(viewer.getUniqueId()));
+        verify(viewer).sendMessage(config.guiReadOnlyMessage());
+        verify(guiService, Mockito.never()).openFor(viewer, holder.session());
+    }
+
     private SignLockConfig createConfig() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("signs.lock-header", "[private]");
@@ -134,6 +154,7 @@ class LockManagementGuiActionTest {
         yaml.set("messages.add-list-full", "&clist-full");
         yaml.set("messages.extension-created", "&aextension-created");
         yaml.set("messages.gui-add-prompt", "&eprompt");
+        yaml.set("messages.gui-read-only-message", "&eread-only");
         return new SignLockConfig(yaml);
     }
 

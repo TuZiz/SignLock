@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ym.signLock.SignLock;
+import ym.signLock.gui.LockSummaryView;
 import ym.signLock.service.LockBatchAuthorizationService;
 import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
@@ -175,14 +176,24 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        LockSummaryView view = LockSummaryView.from(
+                targetedLock.lock(),
+                details,
+                plugin.getLockService().viewerScope(targetedLock.lock(), player)
+        );
+
         sender.sendMessage(plugin.getSignLockConfig().infoHeaderMessage());
-        sender.sendMessage(plugin.getSignLockConfig().infoOwnerMessage(details.owner()));
-        if (details.allowedPlayers().isEmpty()) {
+        sender.sendMessage(plugin.getSignLockConfig().infoOwnerMessage(view.owner()));
+        sender.sendMessage(plugin.getSignLockConfig().infoScopeMessage(view.scopeLabel(plugin.getSignLockConfig())));
+        sender.sendMessage(plugin.getSignLockConfig().infoTargetMessage(view.target().summaryLabel(plugin.getSignLockConfig())));
+        if (!view.canViewAuthorizedPlayers()) {
+            sender.sendMessage(plugin.getSignLockConfig().infoPlayersHiddenMessage());
+        } else if (view.allowedPlayers().isEmpty()) {
             sender.sendMessage(plugin.getSignLockConfig().infoNoPlayersMessage());
         } else {
-            sender.sendMessage(plugin.getSignLockConfig().infoPlayersMessage(String.join(", ", details.allowedPlayers())));
+            sender.sendMessage(plugin.getSignLockConfig().infoPlayersMessage(String.join(", ", view.allowedPlayers())));
         }
-        sender.sendMessage(plugin.getSignLockConfig().infoExtensionsMessage(details.extensionCount()));
+        sender.sendMessage(plugin.getSignLockConfig().infoExtensionsMessage(view.extensionCount()));
         return true;
     }
 

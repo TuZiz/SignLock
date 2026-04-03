@@ -36,7 +36,7 @@ public final class LockManagementGuiService {
     }
 
     public boolean openFor(Player player, Block signBlock) {
-        LockManagementGuiHolder holder = createHolder(signBlock);
+        LockManagementGuiHolder holder = createHolder(player, signBlock);
         if (holder == null) {
             player.sendMessage(config.addInvalidSignMessage());
             return false;
@@ -52,7 +52,23 @@ public final class LockManagementGuiService {
         if (lock == null || details == null) {
             return null;
         }
-        return new LockManagementGuiHolder(LockManagementSession.from(lock), LockSummaryView.from(lock, details));
+        return new LockManagementGuiHolder(
+                LockManagementSession.from(lock),
+                LockSummaryView.from(lock, details, LockService.LockViewerScope.MANAGE)
+        );
+    }
+
+    LockManagementGuiHolder createHolder(Player player, Block signBlock) {
+        LockService.LockInfo lock = lockService.findManagedSignLock(signBlock);
+        LockService.LockDetails details = lockService.describeLock(signBlock);
+        if (lock == null || details == null) {
+            return null;
+        }
+        LockService.LockViewerScope viewerScope = lockService.viewerScope(lock, player);
+        if (viewerScope == LockService.LockViewerScope.DENIED) {
+            return null;
+        }
+        return new LockManagementGuiHolder(LockManagementSession.from(lock), LockSummaryView.from(lock, details, viewerScope));
     }
 
     Inventory buildInventory(LockManagementGuiHolder holder) {

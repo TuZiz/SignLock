@@ -102,7 +102,17 @@ public final class LockService {
             return null;
         }
         List<String> players = new ArrayList<>(lock.allowedPlayers());
-        return new LockDetails(lock.owner(), players, usedExtensionCount(players.size()));
+        return new LockDetails(lock.owner(), players, usedExtensionCount(players.size()), describeTarget(lock.targetBlock()));
+    }
+
+    public LockViewerScope viewerScope(LockInfo lock, Player player) {
+        if (canManage(lock, player)) {
+            return LockViewerScope.MANAGE;
+        }
+        if (canAccess(lock, player)) {
+            return LockViewerScope.ACCESS;
+        }
+        return LockViewerScope.DENIED;
     }
 
     public boolean canAccess(LockInfo lock, Player player) {
@@ -602,6 +612,28 @@ public final class LockService {
         return config.maxMoreUserSigns();
     }
 
+    private LockTargetDetails describeTarget(Block targetBlock) {
+        Block normalizedTarget = normalizeProtectedBlock(targetBlock);
+        if (normalizedTarget == null) {
+            return null;
+        }
+
+        LockTargetKind kind = LockTargetKind.GENERIC;
+        BlockData data = normalizedTarget.getBlockData();
+        if (data instanceof Chest chest) {
+            kind = chest.getType() == Chest.Type.SINGLE ? LockTargetKind.SINGLE_CHEST : LockTargetKind.DOUBLE_CHEST;
+        }
+
+        return new LockTargetDetails(
+                normalizedTarget.getType().name(),
+                normalizedTarget.getWorld().getName(),
+                normalizedTarget.getX(),
+                normalizedTarget.getY(),
+                normalizedTarget.getZ(),
+                kind
+        );
+    }
+
     private List<BlockFace> preferredPlacementFaces(BlockFace clickedFace, boolean prioritizeClickFace) {
         List<BlockFace> faces = new ArrayList<>();
         if (prioritizeClickFace && clickedFace != null && HORIZONTAL_FACES.contains(clickedFace)) {
@@ -723,10 +755,41 @@ public final class LockService {
         OWNER_DENIED
     }
 
+    public enum LockViewerScope {
+        MANAGE,
+        ACCESS,
+        DENIED;
+
+        public boolean readOnly() {
+            return this != MANAGE;
+        }
+
+        public boolean canViewAuthorizedPlayers() {
+            return this != DENIED;
+        }
+    }
+
+    public enum LockTargetKind {
+        SINGLE_CHEST,
+        DOUBLE_CHEST,
+        GENERIC
+    }
+
     public record LockInfo(Block signBlock, Block targetBlock, String owner, Set<String> allowedPlayers, LockType type) {
     }
 
-    public record LockDetails(String owner, List<String> allowedPlayers, int extensionCount) {
+    public record LockDetails(String owner, List<String> allowedPlayers, int extensionCount, LockTargetDetails target) {
+
+        public LockDetails {
+            allowedPlayers = List.copyOf(allowedPlayers);
+        }
+
+        public LockDetails(String owner, List<String> allowedPlayers, int extensionCount) {
+            this(owner, allowedPlayers, extensionCount, null);
+        }
+    }
+
+    public record LockTargetDetails(String blockType, String worldName, int x, int y, int z, LockTargetKind kind) {
     }
 
     private record ProtectedTarget(Block canonicalBlock, List<Block> relatedBlocks) {

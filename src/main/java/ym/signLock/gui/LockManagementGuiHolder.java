@@ -20,9 +20,11 @@ public final class LockManagementGuiHolder implements InventoryHolder {
     public LockManagementGuiHolder(LockManagementSession session, LockSummaryView view) {
         this.session = session;
         this.view = view;
-        List<String> players = view.allowedPlayers();
-        for (int index = 0; index < players.size() && index < LockManagementGui.PLAYER_SLOTS.length; index++) {
-            removablePlayersBySlot.put(LockManagementGui.PLAYER_SLOTS[index], players.get(index));
+        if (view.canManage()) {
+            List<String> players = view.allowedPlayers();
+            for (int index = 0; index < players.size() && index < LockManagementGui.PLAYER_SLOTS.length; index++) {
+                removablePlayersBySlot.put(LockManagementGui.PLAYER_SLOTS[index], players.get(index));
+            }
         }
     }
 
@@ -45,6 +47,10 @@ public final class LockManagementGuiHolder implements InventoryHolder {
 
     public String removablePlayerAt(int rawSlot) {
         return removablePlayersBySlot.get(rawSlot);
+    }
+
+    public boolean readOnly() {
+        return view.readOnly();
     }
 
     public void toggleSelectedPlayer(int rawSlot) {

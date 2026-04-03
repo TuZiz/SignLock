@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 Initial Release** - Phases 1-3 shipped on 2026-04-02. Archive: `.planning/milestones/v1.0-ROADMAP.md`
-- [ ] **v1.1 Modern UX** - Phases 4-5 shipped on 2026-04-02; Phase 6 remains planned. Focus: GUI management, batch authorization, and clearer lock insight.
+- [ ] **v1.1 Modern UX** - Phases 4-6 shipped on 2026-04-03; milestone closeout remains pending. Focus: GUI management, batch authorization, and clearer lock insight.
 
 ## Current Milestone
 
@@ -47,6 +47,11 @@ Plans:
 3. New interactions do not regress the v1.0 protection matrix or compatibility baseline.
 **Plans**: 3 plans
 
+Plans:
+- [x] 06-01-PLAN.md - shared summary contract / human-readable target summary
+- [x] 06-02-PLAN.md - viewer-aware GUI routing / read-only summary surface
+- [x] 06-03-PLAN.md - `/bl info` parity / regression and safety closeout
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -56,7 +61,7 @@ Plans:
 | 3. Localization & Release Readiness | v1.0 | 3/3 | Complete | 2026-04-02 |
 | 4. GUI Lock Management | v1.1 | 3/3 | Complete | 2026-04-02 |
 | 5. Batch Authorization Flows | v1.1 | 3/3 | Complete | 2026-04-02 |
-| 6. Visual Lock Insights & Safety | v1.1 | 0/3 | Not started | - |
+| 6. Visual Lock Insights & Safety | v1.1 | 3/3 | Complete | 2026-04-03 |
 
 ---
-*Roadmap updated: 2026-04-02 for v1.1 Modern UX*
+*Roadmap updated: 2026-04-03 for v1.1 Modern UX*

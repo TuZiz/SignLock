@@ -87,6 +87,25 @@ class LockManagementGuiViewTest {
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.ADD_SLOT).getItemMeta().getDisplayName()));
         assertEquals(ChatColor.stripColor(config.guiCloseButtonLabel()),
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.CLOSE_SLOT).getItemMeta().getDisplayName()));
+        assertEquals("Scope Manage",
+                ChatColor.stripColor(inventory.getItem(LockManagementGui.SCOPE_SLOT).getItemMeta().getDisplayName()));
+    }
+
+    @Test
+    void inventoryUsesHumanReadableDoubleChestTargetSummary() {
+        Block leftHalf = world.getBlockAt(20, 64, 0);
+        Block rightHalf = world.getBlockAt(21, 64, 0);
+        configureDoubleChest(leftHalf, rightHalf, BlockFace.NORTH);
+        Sign primary = placeWallSign(rightHalf, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+
+        LockManagementGuiHolder holder = guiService.createHolder(primary.getBlock());
+        assertNotNull(holder);
+
+        var inventory = guiService.buildInventory(holder);
+        assertEquals(
+                "Target Double chest world 20 64 0",
+                ChatColor.stripColor(inventory.getItem(LockManagementGui.TARGET_SLOT).getItemMeta().getDisplayName())
+        );
     }
 
     private SignLockConfig createConfig() {
@@ -96,6 +115,10 @@ class LockManagementGuiViewTest {
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
         yaml.set("protection.lockable-materials", List.of("CHEST", "TRAPPED_CHEST", "BARREL"));
+        yaml.set("messages.gui-scope-label", "Scope %scope%");
+        yaml.set("messages.scope-manage-label", "Manage");
+        yaml.set("messages.target-summary-double-chest", "Double chest %world% %x% %y% %z%");
+        yaml.set("messages.gui-target-summary-label", "Target %target%");
         return new SignLockConfig(yaml);
     }
 

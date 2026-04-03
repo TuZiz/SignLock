@@ -102,7 +102,7 @@ public final class LockListener implements Listener {
             return;
         }
 
-        if (tryOpenOwnedSignEditor(event, player, clicked)) {
+        if (tryOpenManagedSignSurface(event, player, clicked)) {
             return;
         }
 
@@ -314,22 +314,32 @@ public final class LockListener implements Listener {
         return true;
     }
 
-    private boolean tryOpenOwnedSignEditor(PlayerInteractEvent event, Player player, Block clicked) {
+    private boolean tryOpenManagedSignSurface(PlayerInteractEvent event, Player player, Block clicked) {
         if (!(clicked.getState() instanceof Sign sign)) {
             return false;
         }
 
         LockInfo lock = lockService.findManagedSignLock(clicked);
-        if (lock == null || !lockService.canManage(lock, player)) {
+        if (lock == null) {
+            return false;
+        }
+
+        if (lockService.canManage(lock, player)) {
+            event.setCancelled(true);
+            if (player.isSneaking() || guiService == null) {
+                player.openSign(sign);
+            } else {
+                guiService.openFor(player, sign);
+            }
+            return true;
+        }
+
+        if (player.isSneaking() || guiService == null || !lockService.canAccess(lock, player)) {
             return false;
         }
 
         event.setCancelled(true);
-        if (player.isSneaking() || guiService == null) {
-            player.openSign(sign);
-        } else {
-            guiService.openFor(player, sign);
-        }
+        guiService.openFor(player, sign);
         return true;
     }
 

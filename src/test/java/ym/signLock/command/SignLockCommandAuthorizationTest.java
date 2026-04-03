@@ -138,15 +138,24 @@ class SignLockCommandAuthorizationTest {
 
     @Test
     void infoUsesSameTargetedManagedSignEntryPointForPrimaryAndExtensionSigns() {
-        LockService.LockDetails details = new LockService.LockDetails("Owner", List.of("CurrentName"), 1);
+        LockService.LockDetails details = new LockService.LockDetails(
+                "Owner",
+                List.of("CurrentName"),
+                1,
+                new LockService.LockTargetDetails("CHEST", "world", 10, 64, 20, LockService.LockTargetKind.SINGLE_CHEST)
+        );
         when(lockService.describeLock(targetBlock)).thenReturn(details);
+        when(lockService.viewerScope(lockInfo, player)).thenReturn(LockService.LockViewerScope.MANAGE);
 
         signLockCommand.onCommand(player, command, "signlock", new String[]{"info"});
 
         verify(lockService).findManagedSignLock(targetBlock);
         verify(lockService).describeLock(targetBlock);
+        verify(lockService).viewerScope(lockInfo, player);
         verify(player).sendMessage(config.infoHeaderMessage());
         verify(player).sendMessage(config.infoOwnerMessage("Owner"));
+        verify(player).sendMessage(config.infoScopeMessage(config.scopeManageLabel()));
+        verify(player).sendMessage(config.infoTargetMessage(config.summarySingleChestTargetLabel("world", 10, 64, 20)));
         verify(player).sendMessage(config.infoPlayersMessage("CurrentName"));
         verify(player).sendMessage(config.infoExtensionsMessage(1));
 
@@ -158,6 +167,7 @@ class SignLockCommandAuthorizationTest {
         when(extensionSign.getBlock()).thenReturn(extensionBlock);
         when(lockService.findManagedSignLock(extensionBlock)).thenReturn(lockInfo);
         when(lockService.describeLock(extensionBlock)).thenReturn(details);
+        when(lockService.viewerScope(lockInfo, player)).thenReturn(LockService.LockViewerScope.MANAGE);
 
         signLockCommand.onCommand(player, command, "signlock", new String[]{"info"});
 
@@ -181,7 +191,11 @@ class SignLockCommandAuthorizationTest {
         yaml.set("messages.info-owner", "&eowner %owner%");
         yaml.set("messages.info-players", "&eplayers %players%");
         yaml.set("messages.info-no-players", "&enobody");
+        yaml.set("messages.info-scope", "&escope %scope%");
+        yaml.set("messages.info-target", "&etarget %target%");
         yaml.set("messages.info-extensions", "&eextensions %count%");
+        yaml.set("messages.scope-manage-label", "manage");
+        yaml.set("messages.target-summary-single-chest", "single chest %world% %x% %y% %z%");
         return new SignLockConfig(yaml);
     }
 }
