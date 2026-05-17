@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 public interface SignLockScheduler {
 
@@ -136,6 +137,9 @@ final class ReflectiveFoliaScheduler implements SignLockScheduler {
         Throwable cause = exception instanceof InvocationTargetException invocation && invocation.getCause() != null
                 ? invocation.getCause()
                 : exception;
-        return new IllegalStateException("Failed to schedule SignLock task on Folia " + schedulerType + " scheduler", cause);
+        String message = "Failed to schedule SignLock task on Folia " + schedulerType
+                + " scheduler; task was not run to avoid unsafe Bukkit API access";
+        plugin.getLogger().log(Level.SEVERE, message, cause);
+        return new IllegalStateException(message, cause);
     }
 }

@@ -41,6 +41,7 @@ public final class SignLock extends JavaPlugin {
         signLockConfig = new SignLockConfig(getConfig());
         lockGuiConfig = loadGuiConfig();
         playerIdentityService = new PlayerIdentityService(this);
+        playerIdentityService.startAutoSave(60);
         scheduler = SignLockScheduler.create(this);
         lockService = new LockService(signLockConfig, playerIdentityService);
 
@@ -80,11 +81,12 @@ public final class SignLock extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        playerIdentityService.save();
+        playerIdentityService.shutdown();
         getLogger().info("SignLock disabled.");
     }
 
     public void reloadPluginConfig() {
+        playerIdentityService.save();
         reloadConfig();
         signLockConfig = new SignLockConfig(getConfig());
         lockGuiConfig = loadGuiConfig();

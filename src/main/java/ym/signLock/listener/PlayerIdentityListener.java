@@ -17,6 +17,5 @@ public final class PlayerIdentityListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         playerIdentityService.remember(event.getPlayer());
-        playerIdentityService.saveIfDirty();
     }
 }

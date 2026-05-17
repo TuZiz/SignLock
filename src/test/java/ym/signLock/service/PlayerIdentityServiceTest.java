@@ -1,6 +1,5 @@
 package ym.signLock.service;
 
-import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -33,13 +32,14 @@ class PlayerIdentityServiceTest {
     }
 
     @Test
-    void rememberAndPreloadPersistBidirectionalIndexesAcrossReload() {
+    void rememberAndSavePersistBidirectionalIndexesAcrossReload() {
         PlayerIdentityService service = new PlayerIdentityService(plugin);
-        OfflinePlayer alpha = offlinePlayer("Alpha", UUID.fromString("00000000-0000-0000-0000-000000000001"));
-        OfflinePlayer beta = offlinePlayer("Beta", UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        Player alpha = player("Alpha", UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        Player beta = player("Beta", UUID.fromString("00000000-0000-0000-0000-000000000002"));
 
         service.remember(alpha);
-        service.preload(new OfflinePlayer[]{beta});
+        service.remember(beta);
+        service.save();
 
         PlayerIdentityService reloaded = new PlayerIdentityService(plugin);
         assertEquals(alpha.getUniqueId(), reloaded.findUuidByName("alpha"));
@@ -54,8 +54,8 @@ class PlayerIdentityServiceTest {
         UUID uuid = UUID.fromString("00000000-0000-0000-0000-00000000000a");
         PlayerIdentityService service = new PlayerIdentityService(plugin);
 
-        service.remember(offlinePlayer("OriginalName", uuid));
-        service.remember(offlinePlayer("CurrentName", uuid));
+        service.remember(player("OriginalName", uuid));
+        service.remember(player("CurrentName", uuid));
         service.save();
 
         PlayerIdentityService reloaded = new PlayerIdentityService(plugin);
@@ -93,8 +93,8 @@ class PlayerIdentityServiceTest {
         assertEquals("OnlineName", reloaded.getLastKnownName(uuid));
     }
 
-    private OfflinePlayer offlinePlayer(String name, UUID uuid) {
-        OfflinePlayer player = Mockito.mock(OfflinePlayer.class);
+    private Player player(String name, UUID uuid) {
+        Player player = Mockito.mock(Player.class);
         when(player.getName()).thenReturn(name);
         when(player.getUniqueId()).thenReturn(uuid);
         return player;

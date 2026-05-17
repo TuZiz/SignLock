@@ -34,6 +34,7 @@ public final class LockService {
     private static final Set<String> EXTENSION_HEADER_ALIASES = Set.of("[more users]", "[更多用户]");
 
     private static final long LOCK_CACHE_TTL_NANOS = 50_000_000L;
+    private static final int MAX_LOOKUP_CACHE_SIZE = 4096;
 
     private static final Set<BlockFace> ADJACENT_FACES = EnumSet.of(
             BlockFace.NORTH,
@@ -98,6 +99,7 @@ public final class LockService {
         }
 
         LockInfo lock = findPrimaryLock(normalizedTarget);
+        enforceLookupCacheCapacity(now);
         lookupCache.put(key, new CachedLockLookup(now + LOCK_CACHE_TTL_NANOS, lock));
         return lock;
     }
@@ -199,6 +201,17 @@ public final class LockService {
 
     public void clearLookupCache() {
         lookupCache.clear();
+    }
+
+    private void enforceLookupCacheCapacity(long now) {
+        if (lookupCache.size() < MAX_LOOKUP_CACHE_SIZE) {
+            return;
+        }
+
+        lookupCache.entrySet().removeIf(entry -> entry.getValue().expiresAtNanos() <= now);
+        if (lookupCache.size() >= MAX_LOOKUP_CACHE_SIZE) {
+            clearLookupCache();
+        }
     }
 
     public void invalidateLookupCache(Block block) {
