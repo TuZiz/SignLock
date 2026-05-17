@@ -182,7 +182,8 @@ public final class LockManagementGuiActionService {
 
     private ResolvedLock resolve(LockManagementSession session) {
         Block signBlock = session.resolveSignBlock();
-        if (!(signBlock != null && signBlock.getState() instanceof Sign sign)) {
+        Sign sign = LockService.getSignStateIfSign(signBlock);
+        if (sign == null) {
             return null;
         }
 

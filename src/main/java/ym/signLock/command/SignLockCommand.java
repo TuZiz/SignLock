@@ -14,6 +14,7 @@ import ym.signLock.gui.LockSummaryView;
 import ym.signLock.service.LockBatchAuthorizationService;
 import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
+import ym.signLock.service.LockService;
 import ym.signLock.service.LockService.AddPlayerResult;
 import ym.signLock.service.LockService.LockDetails;
 import ym.signLock.service.LockService.LockInfo;
@@ -245,7 +246,8 @@ public final class SignLockCommand implements CommandExecutor, TabCompleter {
 
     private TargetedLock getTargetedLock(Player player) {
         Block targetBlock = player.getTargetBlockExact(6);
-        if (!(targetBlock != null && targetBlock.getState() instanceof Sign sign)) {
+        Sign sign = LockService.getSignStateIfSign(targetBlock);
+        if (sign == null) {
             return null;
         }
 

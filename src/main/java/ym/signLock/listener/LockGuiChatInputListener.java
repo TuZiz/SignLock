@@ -7,12 +7,13 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.entity.Player;
 import ym.signLock.gui.LockManagementGuiActionService;
 import ym.signLock.gui.LockManagementPendingInputStore;
+import ym.signLock.platform.SignLockScheduler;
 
 import java.util.function.Consumer;
 
 public final class LockGuiChatInputListener implements Listener {
 
-    private final Consumer<Runnable> nextTick;
+    private final SignLockScheduler scheduler;
     private final LockManagementPendingInputStore pendingInputStore;
     private final LockManagementGuiActionService actionService;
 
@@ -21,7 +22,15 @@ public final class LockGuiChatInputListener implements Listener {
             LockManagementPendingInputStore pendingInputStore,
             LockManagementGuiActionService actionService
     ) {
-        this.nextTick = nextTick;
+        this(schedulerFromConsumer(nextTick), pendingInputStore, actionService);
+    }
+
+    public LockGuiChatInputListener(
+            SignLockScheduler scheduler,
+            LockManagementPendingInputStore pendingInputStore,
+            LockManagementGuiActionService actionService
+    ) {
+        this.scheduler = scheduler;
         this.pendingInputStore = pendingInputStore;
         this.actionService = actionService;
     }
@@ -43,7 +52,7 @@ public final class LockGuiChatInputListener implements Listener {
             return false;
         }
 
-        nextTick.accept(() -> actionService.handleChatInput(player, message));
+        scheduler.runAtPlayer(player, () -> actionService.handleChatInput(player, message));
         return true;
     }
 
@@ -51,5 +60,24 @@ public final class LockGuiChatInputListener implements Listener {
         event.setCancelled(true);
         event.setMessage("");
         event.getRecipients().clear();
+    }
+
+    private static SignLockScheduler schedulerFromConsumer(Consumer<Runnable> nextTick) {
+        return new SignLockScheduler() {
+            @Override
+            public void runNextTick(Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtPlayer(Player player, Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtBlock(org.bukkit.block.Block block, Runnable task) {
+                nextTick.accept(task);
+            }
+        };
     }
 }

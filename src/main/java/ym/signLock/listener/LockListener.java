@@ -19,6 +19,7 @@ import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -27,6 +28,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import ym.signLock.gui.LockManagementGuiService;
 import ym.signLock.config.SignLockConfig;
+import ym.signLock.platform.SignLockScheduler;
 import ym.signLock.service.LockService;
 import ym.signLock.service.LockService.LockInfo;
 import ym.signLock.service.LockService.LockType;
@@ -39,7 +41,7 @@ public final class LockListener implements Listener {
     private final LockService lockService;
     private final PlayerIdentityService playerIdentityService;
     private final LockManagementGuiService guiService;
-    private final Consumer<Runnable> nextTick;
+    private final SignLockScheduler scheduler;
     private SignLockConfig config;
 
     public LockListener(LockService lockService, PlayerIdentityService playerIdentityService, SignLockConfig config) {
@@ -62,11 +64,21 @@ public final class LockListener implements Listener {
             LockManagementGuiService guiService,
             Consumer<Runnable> nextTick
     ) {
+        this(lockService, playerIdentityService, config, guiService, schedulerFromConsumer(nextTick));
+    }
+
+    public LockListener(
+            LockService lockService,
+            PlayerIdentityService playerIdentityService,
+            SignLockConfig config,
+            LockManagementGuiService guiService,
+            SignLockScheduler scheduler
+    ) {
         this.lockService = lockService;
         this.playerIdentityService = playerIdentityService;
         this.config = config;
         this.guiService = guiService;
-        this.nextTick = nextTick;
+        this.scheduler = scheduler;
     }
 
     public void setConfig(SignLockConfig config) {
@@ -75,30 +87,35 @@ public final class LockListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSignChange(SignChangeEvent event) {
-        LockInfo managedLock = lockService.findManagedSignLock(event.getBlock());
-        if (managedLock != null) {
-            if (!lockService.canManage(managedLock, event.getPlayer())) {
-                event.setCancelled(true);
-                event.getPlayer().sendMessage(config.signEditDeniedMessage());
+        lockService.clearLookupCache();
+        try {
+            LockInfo managedLock = lockService.findManagedSignLock(event.getBlock());
+            if (managedLock != null) {
+                if (!lockService.canManage(managedLock, event.getPlayer())) {
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage(config.signEditDeniedMessage());
+                    return;
+                }
+                preserveManagedSignStructure(event, managedLock);
                 return;
             }
-            preserveManagedSignStructure(event, managedLock);
-            return;
-        }
 
-        String rawHeader = cleanLine(event.getLine(0));
-        if (rawHeader == null) {
-            handleAutomaticLockSignPlacement(event);
-            return;
-        }
+            String rawHeader = cleanLine(event.getLine(0));
+            if (rawHeader == null) {
+                handleAutomaticLockSignPlacement(event);
+                return;
+            }
 
-        if (matches(rawHeader, config.lockHeader())) {
-            handleLockSignPlacement(event);
-            return;
-        }
+            if (matches(rawHeader, config.lockHeader())) {
+                handleLockSignPlacement(event);
+                return;
+            }
 
-        if (matches(rawHeader, config.moreUsersHeader())) {
-            handleMoreUsersPlacement(event);
+            if (matches(rawHeader, config.moreUsersHeader())) {
+                handleMoreUsersPlacement(event);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
@@ -155,6 +172,10 @@ public final class LockListener implements Listener {
     public void onInventoryMove(InventoryMoveItemEvent event) {
         Block source = lockService.resolveInventoryBlock(event.getSource());
         Block destination = lockService.resolveInventoryBlock(event.getDestination());
+        if (source == null && destination == null) {
+            return;
+        }
+
         if (lockService.shouldBlockAutomationMove(source, destination)) {
             event.setCancelled(true);
         }
@@ -164,69 +185,105 @@ public final class LockListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         Block block = event.getBlock();
+        try {
+            LockInfo directLock = lockService.findLock(block);
+            if (directLock != null && !lockService.canBreak(directLock, player)) {
+                event.setCancelled(true);
+                player.sendMessage(config.protectedBlockMessage());
+                return;
+            }
 
-        LockInfo directLock = lockService.findLock(block);
-        if (directLock != null && !lockService.canBreak(directLock, player)) {
-            event.setCancelled(true);
-            player.sendMessage(config.protectedBlockMessage());
-            return;
+            LockInfo signLock = lockService.findManagedSignLock(block);
+            if (signLock != null && !lockService.canBreak(signLock, player)) {
+                event.setCancelled(true);
+                player.sendMessage(config.protectedSignMessage());
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
+    }
 
-        LockInfo signLock = lockService.findManagedSignLock(block);
-        if (signLock != null && !lockService.canBreak(signLock, player)) {
-            event.setCancelled(true);
-            player.sendMessage(config.protectedSignMessage());
-        }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        lockService.clearLookupCache();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
-        if (config.protectExplosions()) {
-            event.blockList().removeIf(lockService::isExplosionProtected);
+        try {
+            if (config.protectExplosions()) {
+                event.blockList().removeIf(lockService::isExplosionProtected);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
-        if (config.protectExplosions()) {
-            event.blockList().removeIf(lockService::isExplosionProtected);
+        try {
+            if (config.protectExplosions()) {
+                event.blockList().removeIf(lockService::isExplosionProtected);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (lockService.containsProtectedStructure(event.getBlocks())
-                || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
-            event.setCancelled(true);
+        try {
+            if (lockService.containsProtectedStructure(event.getBlocks())
+                    || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
+                event.setCancelled(true);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (lockService.containsProtectedStructure(event.getBlocks())
-                || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
-            event.setCancelled(true);
+        try {
+            if (lockService.containsProtectedStructure(event.getBlocks())
+                    || lockService.wouldMoveIntoProtectedStructure(event.getBlocks(), event.getDirection())) {
+                event.setCancelled(true);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFluidFlow(BlockFromToEvent event) {
-        if (lockService.isProtectedStructure(event.getBlock()) || lockService.isProtectedStructure(event.getToBlock())) {
-            event.setCancelled(true);
+        try {
+            if (lockService.isProtectedStructure(event.getBlock()) || lockService.isProtectedStructure(event.getToBlock())) {
+                event.setCancelled(true);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent event) {
-        if (lockService.isProtectedStructure(event.getBlock())) {
-            event.setCancelled(true);
+        try {
+            if (lockService.isProtectedStructure(event.getBlock())) {
+                event.setCancelled(true);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockIgnite(BlockIgniteEvent event) {
-        if (lockService.isProtectedStructure(event.getBlock())) {
-            event.setCancelled(true);
+        try {
+            if (lockService.isProtectedStructure(event.getBlock())) {
+                event.setCancelled(true);
+            }
+        } finally {
+            lockService.clearLookupCache();
         }
     }
 
@@ -339,7 +396,8 @@ public final class LockListener implements Listener {
     }
 
     private boolean tryOpenManagedSignSurface(PlayerInteractEvent event, Player player, Block clicked) {
-        if (!(clicked.getState() instanceof Sign sign)) {
+        Sign sign = LockService.getSignStateIfSign(clicked);
+        if (sign == null) {
             return false;
         }
 
@@ -365,7 +423,7 @@ public final class LockListener implements Listener {
             return true;
         }
 
-        nextTick.accept(() -> guiService.openFor(player, sign));
+        scheduler.runAtPlayer(player, () -> guiService.openFor(player, sign));
         return true;
     }
 
@@ -384,7 +442,8 @@ public final class LockListener implements Listener {
     }
 
     private boolean isExtraUsersSign(Block block) {
-        if (!(block.getState() instanceof Sign sign)) {
+        Sign sign = LockService.getSignStateIfSign(block);
+        if (sign == null) {
             return false;
         }
 
@@ -438,5 +497,24 @@ public final class LockListener implements Listener {
             return;
         }
         item.setAmount(amount - 1);
+    }
+
+    private static SignLockScheduler schedulerFromConsumer(Consumer<Runnable> nextTick) {
+        return new SignLockScheduler() {
+            @Override
+            public void runNextTick(Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtPlayer(Player player, Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtBlock(Block block, Runnable task) {
+                nextTick.accept(task);
+            }
+        };
     }
 }

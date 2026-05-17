@@ -13,6 +13,7 @@ import ym.signLock.listener.LockGuiListener;
 import ym.signLock.listener.LockListener;
 import ym.signLock.listener.PaperAsyncChatBridgeRegistrar;
 import ym.signLock.listener.PlayerIdentityListener;
+import ym.signLock.platform.SignLockScheduler;
 import ym.signLock.service.LockBatchAuthorizationService;
 import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
@@ -20,7 +21,6 @@ import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
 
 import java.io.File;
-import java.util.function.Consumer;
 
 public final class SignLock extends JavaPlugin {
 
@@ -31,6 +31,7 @@ public final class SignLock extends JavaPlugin {
     private PlayerIdentityService playerIdentityService;
     private LockManagementGuiService lockManagementGuiService;
     private LockManagementGuiActionService lockManagementGuiActionService;
+    private SignLockScheduler scheduler;
 
     @Override
     public void onEnable() {
@@ -40,7 +41,7 @@ public final class SignLock extends JavaPlugin {
         signLockConfig = new SignLockConfig(getConfig());
         lockGuiConfig = loadGuiConfig();
         playerIdentityService = new PlayerIdentityService(this);
-        playerIdentityService.preload(getServer().getOfflinePlayers());
+        scheduler = SignLockScheduler.create(this);
         lockService = new LockService(signLockConfig, playerIdentityService);
 
         LockPlayerNameNormalizer playerNameNormalizer = new LockPlayerNameNormalizer(playerIdentityService);
@@ -59,12 +60,11 @@ public final class SignLock extends JavaPlugin {
                 lockGuiConfig
         );
 
-        Consumer<Runnable> nextTick = task -> getServer().getScheduler().runTask(this, task);
-        lockListener = new LockListener(lockService, playerIdentityService, signLockConfig, lockManagementGuiService, nextTick);
+        lockListener = new LockListener(lockService, playerIdentityService, signLockConfig, lockManagementGuiService, scheduler);
 
         getServer().getPluginManager().registerEvents(lockListener, this);
-        getServer().getPluginManager().registerEvents(new LockGuiListener(nextTick, lockManagementGuiActionService), this);
-        LockGuiChatInputListener chatInputListener = new LockGuiChatInputListener(nextTick, pendingInputStore, lockManagementGuiActionService);
+        getServer().getPluginManager().registerEvents(new LockGuiListener(scheduler, lockManagementGuiActionService), this);
+        LockGuiChatInputListener chatInputListener = new LockGuiChatInputListener(scheduler, pendingInputStore, lockManagementGuiActionService);
         getServer().getPluginManager().registerEvents(chatInputListener, this);
         PaperAsyncChatBridgeRegistrar.register(this, chatInputListener);
         getServer().getPluginManager().registerEvents(new PlayerIdentityListener(playerIdentityService), this);
@@ -89,6 +89,7 @@ public final class SignLock extends JavaPlugin {
         signLockConfig = new SignLockConfig(getConfig());
         lockGuiConfig = loadGuiConfig();
         lockService.setConfig(signLockConfig);
+        lockService.clearLookupCache();
         lockListener.setConfig(signLockConfig);
         lockManagementGuiService.setConfig(signLockConfig);
         lockManagementGuiService.setGuiConfig(lockGuiConfig);

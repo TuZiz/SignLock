@@ -1,6 +1,8 @@
 package ym.signLock.service;
 
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Server;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +71,26 @@ class PlayerIdentityServiceTest {
 
         assertNull(service.findUuidByName("Nobody"));
         assertEquals("Nobody", service.resolveStoredName("Nobody"));
+    }
+
+    @Test
+    void resolveStoredNameCanLearnOnlinePlayerWithoutOfflinePreload() {
+        UUID uuid = UUID.fromString("00000000-0000-0000-0000-00000000000b");
+        Server server = Mockito.mock(Server.class);
+        Player player = Mockito.mock(Player.class);
+        when(plugin.getServer()).thenReturn(server);
+        when(server.getPlayerExact("OnlineName")).thenReturn(player);
+        when(player.getName()).thenReturn("OnlineName");
+        when(player.getUniqueId()).thenReturn(uuid);
+
+        PlayerIdentityService service = new PlayerIdentityService(plugin);
+
+        assertEquals("OnlineName", service.resolveStoredName("OnlineName"));
+        service.saveIfDirty();
+
+        PlayerIdentityService reloaded = new PlayerIdentityService(plugin);
+        assertEquals(uuid, reloaded.findUuidByName("onlinename"));
+        assertEquals("OnlineName", reloaded.getLastKnownName(uuid));
     }
 
     private OfflinePlayer offlinePlayer(String name, UUID uuid) {

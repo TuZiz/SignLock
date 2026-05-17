@@ -1,6 +1,8 @@
 package ym.signLock.service;
 
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Server;
+import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -14,6 +16,7 @@ public final class PlayerIdentityService {
     private final JavaPlugin plugin;
     private final File file;
     private final YamlConfiguration storage;
+    private boolean dirty;
 
     public PlayerIdentityService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -25,18 +28,28 @@ public final class PlayerIdentityService {
         for (OfflinePlayer offlinePlayer : offlinePlayers) {
             remember(offlinePlayer);
         }
-        save();
+        saveIfDirty();
     }
 
-    public void remember(OfflinePlayer player) {
+    public boolean remember(OfflinePlayer player) {
         String name = player.getName();
         if (name == null || name.isBlank() || player.getUniqueId() == null) {
-            return;
+            return false;
         }
 
         UUID uuid = player.getUniqueId();
-        storage.set("names." + normalizeName(name), uuid.toString());
-        storage.set("uuids." + uuid, name);
+        String namePath = "names." + normalizeName(name);
+        String uuidPath = "uuids." + uuid;
+        boolean changed = !uuid.toString().equals(storage.getString(namePath))
+                || !name.equals(storage.getString(uuidPath));
+        if (!changed) {
+            return false;
+        }
+
+        storage.set(namePath, uuid.toString());
+        storage.set(uuidPath, name);
+        dirty = true;
+        return true;
     }
 
     public UUID findUuidByName(String playerName) {
@@ -58,12 +71,26 @@ public final class PlayerIdentityService {
 
     public String resolveStoredName(String playerName) {
         UUID uuid = findUuidByName(playerName);
-        if (uuid == null) {
+        if (uuid != null) {
+            Server server = plugin.getServer();
+            if (server != null) {
+                Player onlineByUuid = server.getPlayer(uuid);
+                if (onlineByUuid != null) {
+                    remember(onlineByUuid);
+                }
+            }
+
+            String lastKnownName = getLastKnownName(uuid);
+            return lastKnownName == null || lastKnownName.isBlank() ? playerName : lastKnownName;
+        }
+
+        Player onlineByName = findOnlinePlayer(playerName);
+        if (onlineByName == null) {
             return playerName;
         }
 
-        String lastKnownName = getLastKnownName(uuid);
-        return lastKnownName == null || lastKnownName.isBlank() ? playerName : lastKnownName;
+        remember(onlineByName);
+        return onlineByName.getName();
     }
 
     public String getLastKnownName(UUID uuid) {
@@ -76,9 +103,39 @@ public final class PlayerIdentityService {
                 file.getParentFile().mkdirs();
             }
             storage.save(file);
+            dirty = false;
         } catch (IOException exception) {
             plugin.getLogger().warning("Failed to save players.yml: " + exception.getMessage());
         }
+    }
+
+    public void saveIfDirty() {
+        if (dirty) {
+            save();
+        }
+    }
+
+    private Player findOnlinePlayer(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return null;
+        }
+
+        Server server = plugin.getServer();
+        if (server == null) {
+            return null;
+        }
+
+        Player exact = server.getPlayerExact(playerName);
+        if (exact != null) {
+            return exact;
+        }
+
+        for (Player onlinePlayer : server.getOnlinePlayers()) {
+            if (onlinePlayer.getName().equalsIgnoreCase(playerName)) {
+                return onlinePlayer;
+            }
+        }
+        return null;
     }
 
     private static String normalizeName(String playerName) {

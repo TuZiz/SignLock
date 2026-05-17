@@ -9,16 +9,21 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import ym.signLock.gui.LockManagementGuiActionService;
 import ym.signLock.gui.LockManagementGuiHolder;
+import ym.signLock.platform.SignLockScheduler;
 
 import java.util.function.Consumer;
 
 public final class LockGuiListener implements Listener {
 
-    private final Consumer<Runnable> nextTick;
+    private final SignLockScheduler scheduler;
     private final LockManagementGuiActionService actionService;
 
     public LockGuiListener(Consumer<Runnable> nextTick, LockManagementGuiActionService actionService) {
-        this.nextTick = nextTick;
+        this(schedulerFromConsumer(nextTick), actionService);
+    }
+
+    public LockGuiListener(SignLockScheduler scheduler, LockManagementGuiActionService actionService) {
+        this.scheduler = scheduler;
         this.actionService = actionService;
     }
 
@@ -41,7 +46,7 @@ public final class LockGuiListener implements Listener {
 
         boolean rightClick = event.isRightClick();
         boolean shiftClick = event.isShiftClick();
-        nextTick.accept(() -> actionService.handleClick(player, holder, rawSlot, rightClick, shiftClick));
+        scheduler.runAtPlayer(player, () -> actionService.handleClick(player, holder, rawSlot, rightClick, shiftClick));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -55,5 +60,24 @@ public final class LockGuiListener implements Listener {
         if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) {
             event.setCancelled(true);
         }
+    }
+
+    private static SignLockScheduler schedulerFromConsumer(Consumer<Runnable> nextTick) {
+        return new SignLockScheduler() {
+            @Override
+            public void runNextTick(Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtPlayer(Player player, Runnable task) {
+                nextTick.accept(task);
+            }
+
+            @Override
+            public void runAtBlock(org.bukkit.block.Block block, Runnable task) {
+                nextTick.accept(task);
+            }
+        };
     }
 }

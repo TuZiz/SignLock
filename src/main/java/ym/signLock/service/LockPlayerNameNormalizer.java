@@ -13,7 +13,7 @@ public final class LockPlayerNameNormalizer {
     public String normalize(Player actor, String rawInput) {
         playerIdentityService.remember(actor);
         String normalizedTarget = playerIdentityService.resolveStoredName(rawInput);
-        playerIdentityService.save();
+        playerIdentityService.saveIfDirty();
         return normalizedTarget == null || normalizedTarget.isBlank() ? rawInput : normalizedTarget;
     }
 }

@@ -21,8 +21,10 @@ import ym.signLock.config.SignLockConfig;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,6 +32,8 @@ public final class LockService {
 
     private static final Set<String> PRIMARY_HEADER_ALIASES = Set.of("[private]", "[锁]");
     private static final Set<String> EXTENSION_HEADER_ALIASES = Set.of("[more users]", "[更多用户]");
+
+    private static final long LOCK_CACHE_TTL_NANOS = 50_000_000L;
 
     private static final Set<BlockFace> ADJACENT_FACES = EnumSet.of(
             BlockFace.NORTH,
@@ -48,6 +52,7 @@ public final class LockService {
 
     private SignLockConfig config;
     private final PlayerIdentityService playerIdentityService;
+    private final Map<BlockKey, CachedLockLookup> lookupCache = new HashMap<>();
 
     public LockService(SignLockConfig config, PlayerIdentityService playerIdentityService) {
         this.config = config;
@@ -56,6 +61,7 @@ public final class LockService {
 
     public void setConfig(SignLockConfig config) {
         this.config = config;
+        clearLookupCache();
     }
 
     public Block findPlacementTarget(Block signBlock) {
@@ -79,11 +85,26 @@ public final class LockService {
     }
 
     public LockInfo findLock(Block block) {
-        return findPrimaryLock(canonicalTarget(block));
+        Block normalizedTarget = canonicalTarget(block);
+        if (normalizedTarget == null) {
+            return null;
+        }
+
+        BlockKey key = BlockKey.from(normalizedTarget);
+        long now = System.nanoTime();
+        CachedLockLookup cached = lookupCache.get(key);
+        if (cached != null && cached.expiresAtNanos() > now) {
+            return cached.lockInfo();
+        }
+
+        LockInfo lock = findPrimaryLock(normalizedTarget);
+        lookupCache.put(key, new CachedLockLookup(now + LOCK_CACHE_TTL_NANOS, lock));
+        return lock;
     }
 
     public LockInfo findManagedSignLock(Block block) {
-        if (!(block.getState() instanceof Sign sign)) {
+        Sign sign = getSignStateIfSign(block);
+        if (sign == null) {
             return null;
         }
 
@@ -166,10 +187,39 @@ public final class LockService {
     }
 
     public boolean shouldBlockAutomationMove(Block source, Block destination) {
+        if (source == null && destination == null) {
+            return false;
+        }
+
         LockInfo sourceLock = source == null ? null : findLock(source);
         LockInfo destinationLock = destination == null ? null : findLock(destination);
 
         return sourceLock != null || destinationLock != null;
+    }
+
+    public void clearLookupCache() {
+        lookupCache.clear();
+    }
+
+    public void invalidateLookupCache(Block block) {
+        if (block == null) {
+            return;
+        }
+
+        lookupCache.remove(BlockKey.from(block));
+        Block normalized = canonicalTarget(block);
+        if (normalized != null) {
+            lookupCache.remove(BlockKey.from(normalized));
+        }
+
+        for (BlockFace face : ADJACENT_FACES) {
+            Block relative = block.getRelative(face);
+            lookupCache.remove(BlockKey.from(relative));
+            Block relativeTarget = canonicalTarget(relative);
+            if (relativeTarget != null) {
+                lookupCache.remove(BlockKey.from(relativeTarget));
+            }
+        }
     }
 
     public boolean containsProtectedStructure(Iterable<Block> blocks) {
@@ -261,6 +311,7 @@ public final class LockService {
             placed.setLine(2, "");
             placed.setLine(3, "");
             placed.update(true, false);
+            clearLookupCache();
             return true;
         }
 
@@ -289,6 +340,7 @@ public final class LockService {
                 placed.setLine(2, "");
                 placed.setLine(3, "");
                 placed.update(true, false);
+                clearLookupCache();
                 return placed;
             }
         }
@@ -339,7 +391,8 @@ public final class LockService {
         for (Block related : collectRelatedBlocks(normalizedTarget)) {
             for (BlockFace face : ADJACENT_FACES) {
                 Block signBlock = related.getRelative(face);
-                if (!(signBlock.getState() instanceof Sign sign)) {
+                Sign sign = getSignStateIfSign(signBlock);
+                if (sign == null) {
                     continue;
                 }
 
@@ -371,7 +424,8 @@ public final class LockService {
         for (Block related : collectRelatedBlocks(normalizedTarget)) {
             for (BlockFace face : ADJACENT_FACES) {
                 Block signBlock = related.getRelative(face);
-                if (!(signBlock.getState() instanceof Sign sign)) {
+                Sign sign = getSignStateIfSign(signBlock);
+                if (sign == null) {
                     continue;
                 }
 
@@ -525,7 +579,8 @@ public final class LockService {
         for (Block related : collectRelatedBlocks(normalizedTarget)) {
             for (BlockFace face : ADJACENT_FACES) {
                 Block signBlock = related.getRelative(face);
-                if (!(signBlock.getState() instanceof Sign sign)) {
+                Sign sign = getSignStateIfSign(signBlock);
+                if (sign == null) {
                     continue;
                 }
                 if (!isManagedSignForTarget(sign, normalizedTarget) || containsSign(result, sign)) {
@@ -575,6 +630,7 @@ public final class LockService {
             if (line == null) {
                 sign.setLine(index, playerName);
                 sign.update(true, false);
+                clearLookupCache();
                 return true;
             }
         }
@@ -593,6 +649,7 @@ public final class LockService {
             if (line != null && sameIdentity(line, playerName)) {
                 sign.setLine(index, "");
                 sign.update(true, false);
+                clearLookupCache();
                 return true;
             }
         }
@@ -612,6 +669,7 @@ public final class LockService {
         }
 
         sign.getBlock().setType(Material.AIR, false);
+        clearLookupCache();
     }
 
     private int countMoreUserSigns(Block target) {
@@ -734,7 +792,8 @@ public final class LockService {
             directional.setFacing(face);
             signBlock.setBlockData(data, false);
         }
-        if (!(signBlock.getState() instanceof Sign signState)) {
+        Sign signState = getSignStateIfSign(signBlock);
+        if (signState == null) {
             signBlock.setType(Material.AIR, false);
             return null;
         }
@@ -818,6 +877,25 @@ public final class LockService {
                 && first.getX() == second.getX()
                 && first.getY() == second.getY()
                 && first.getZ() == second.getZ();
+    }
+
+    public static boolean isSignMaterial(Material material) {
+        if (material == null) {
+            return false;
+        }
+
+        String name = material.name();
+        return name.endsWith("_SIGN")
+                || name.endsWith("_WALL_SIGN")
+                || name.endsWith("_HANGING_SIGN")
+                || name.endsWith("_WALL_HANGING_SIGN");
+    }
+
+    public static Sign getSignStateIfSign(Block block) {
+        if (block == null || !isSignMaterial(block.getType())) {
+            return null;
+        }
+        return block.getState() instanceof Sign sign ? sign : null;
     }
 
     private boolean isSameLockTarget(Block first, Block second) {
@@ -904,5 +982,15 @@ public final class LockService {
     }
 
     private record ProtectedTarget(Block canonicalBlock, List<Block> relatedBlocks) {
+    }
+
+    private record BlockKey(UUID worldId, int x, int y, int z) {
+
+        private static BlockKey from(Block block) {
+            return new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+        }
+    }
+
+    private record CachedLockLookup(long expiresAtNanos, LockInfo lockInfo) {
     }
 }
