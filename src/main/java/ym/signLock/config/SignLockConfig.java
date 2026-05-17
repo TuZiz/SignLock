@@ -420,23 +420,23 @@ public final class SignLockConfig {
     }
 
     public String batchAddSummaryMessage(List<String> addedPlayers, List<String> alreadyAuthorizedPlayers, List<String> noSpacePlayers) {
-        return batchAddSummaryMessage
+        return simplifyBatchSummary(batchAddSummaryMessage
                 .replace("%added_count%", Integer.toString(addedPlayers.size()))
                 .replace("%added%", formatPlayers(addedPlayers))
                 .replace("%already_count%", Integer.toString(alreadyAuthorizedPlayers.size()))
                 .replace("%already%", formatPlayers(alreadyAuthorizedPlayers))
                 .replace("%no_space_count%", Integer.toString(noSpacePlayers.size()))
-                .replace("%no_space%", formatPlayers(noSpacePlayers));
+                .replace("%no_space%", formatPlayers(noSpacePlayers)));
     }
 
     public String batchRemoveSummaryMessage(List<String> removedPlayers, List<String> notFoundPlayers, List<String> ownerDeniedPlayers) {
-        return batchRemoveSummaryMessage
+        return simplifyBatchSummary(batchRemoveSummaryMessage
                 .replace("%removed_count%", Integer.toString(removedPlayers.size()))
                 .replace("%removed%", formatPlayers(removedPlayers))
                 .replace("%not_found_count%", Integer.toString(notFoundPlayers.size()))
                 .replace("%not_found%", formatPlayers(notFoundPlayers))
                 .replace("%owner_denied_count%", Integer.toString(ownerDeniedPlayers.size()))
-                .replace("%owner_denied%", formatPlayers(ownerDeniedPlayers));
+                .replace("%owner_denied%", formatPlayers(ownerDeniedPlayers)));
     }
 
     public String scopeManageLabel() {
@@ -510,6 +510,10 @@ public final class SignLockConfig {
                 .replace("%z%", Integer.toString(z));
     }
 
+    private static String simplifyBatchSummary(String message) {
+        return message.replaceAll("\\b\\d+\\(([^)]*)\\)", "$1");
+    }
+
     private static Set<Material> loadLockableMaterials(List<String> configured) {
         Set<Material> materials = EnumSet.noneOf(Material.class);
         List<String> source = configured == null || configured.isEmpty() ? defaultLockableMaterials() : configured;
@@ -528,7 +532,7 @@ public final class SignLockConfig {
     private static List<BlockFace> loadPlacementOrder(List<String> configured) {
         List<BlockFace> faces = new ArrayList<>();
         List<String> source = configured == null || configured.isEmpty()
-                ? List.of("NORTH", "SOUTH", "EAST", "WEST")
+                ? List.of("NORTH", "SOUTH", "EAST", "WEST", "UP", "DOWN")
                 : configured;
         for (String entry : source) {
             if (entry == null || entry.isBlank()) {
@@ -543,7 +547,14 @@ public final class SignLockConfig {
             }
         }
         if (faces.isEmpty()) {
-            faces.addAll(List.of(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST));
+            faces.addAll(List.of(
+                    BlockFace.NORTH,
+                    BlockFace.SOUTH,
+                    BlockFace.EAST,
+                    BlockFace.WEST,
+                    BlockFace.UP,
+                    BlockFace.DOWN
+            ));
         }
         return faces;
     }

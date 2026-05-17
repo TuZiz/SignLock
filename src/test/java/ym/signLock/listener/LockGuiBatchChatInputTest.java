@@ -10,6 +10,7 @@ import ym.signLock.gui.LockManagementPendingInputStore;
 import ym.signLock.gui.LockManagementSession;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,10 +37,12 @@ class LockGuiBatchChatInputTest {
         AsyncPlayerChatEvent event = Mockito.mock(AsyncPlayerChatEvent.class);
         when(event.getPlayer()).thenReturn(player);
         when(event.getMessage()).thenReturn("Alice Bob,Charlie");
+        when(event.getRecipients()).thenReturn(new HashSet<>());
 
         listener.onAsyncPlayerChat(event);
 
         verify(event).setCancelled(true);
+        verify(event).setMessage("");
         verify(actionService, never()).handleChatInput(player, "Alice Bob,Charlie");
         assertEquals(1, queuedTasks.size());
 

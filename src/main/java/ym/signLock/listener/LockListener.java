@@ -10,10 +10,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -21,7 +24,6 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import ym.signLock.gui.LockManagementGuiService;
 import ym.signLock.config.SignLockConfig;
@@ -30,15 +32,18 @@ import ym.signLock.service.LockService.LockInfo;
 import ym.signLock.service.LockService.LockType;
 import ym.signLock.service.PlayerIdentityService;
 
+import java.util.function.Consumer;
+
 public final class LockListener implements Listener {
 
     private final LockService lockService;
     private final PlayerIdentityService playerIdentityService;
     private final LockManagementGuiService guiService;
+    private final Consumer<Runnable> nextTick;
     private SignLockConfig config;
 
     public LockListener(LockService lockService, PlayerIdentityService playerIdentityService, SignLockConfig config) {
-        this(lockService, playerIdentityService, config, null);
+        this(lockService, playerIdentityService, config, null, Runnable::run);
     }
 
     public LockListener(
@@ -47,10 +52,21 @@ public final class LockListener implements Listener {
             SignLockConfig config,
             LockManagementGuiService guiService
     ) {
+        this(lockService, playerIdentityService, config, guiService, Runnable::run);
+    }
+
+    public LockListener(
+            LockService lockService,
+            PlayerIdentityService playerIdentityService,
+            SignLockConfig config,
+            LockManagementGuiService guiService,
+            Consumer<Runnable> nextTick
+    ) {
         this.lockService = lockService;
         this.playerIdentityService = playerIdentityService;
         this.config = config;
         this.guiService = guiService;
+        this.nextTick = nextTick;
     }
 
     public void setConfig(SignLockConfig config) {
@@ -121,12 +137,7 @@ public final class LockListener implements Listener {
             return;
         }
 
-        InventoryHolder holder = event.getInventory().getHolder();
-        if (holder == null) {
-            return;
-        }
-
-        Block target = lockService.resolveInventoryBlock(holder);
+        Block target = lockService.resolveInventoryBlock(event.getInventory());
         if (target == null) {
             return;
         }
@@ -142,10 +153,9 @@ public final class LockListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryMove(InventoryMoveItemEvent event) {
-        Block source = lockService.resolveInventoryBlock(event.getSource().getHolder());
-        Block destination = lockService.resolveInventoryBlock(event.getDestination().getHolder());
-        if ((source != null && lockService.isProtectedAutomationTarget(source))
-                || (destination != null && lockService.isProtectedAutomationTarget(destination))) {
+        Block source = lockService.resolveInventoryBlock(event.getSource());
+        Block destination = lockService.resolveInventoryBlock(event.getDestination());
+        if (lockService.shouldBlockAutomationMove(source, destination)) {
             event.setCancelled(true);
         }
     }
@@ -202,6 +212,20 @@ public final class LockListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFluidFlow(BlockFromToEvent event) {
         if (lockService.isProtectedStructure(event.getBlock()) || lockService.isProtectedStructure(event.getToBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockBurn(BlockBurnEvent event) {
+        if (lockService.isProtectedStructure(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockIgnite(BlockIgniteEvent event) {
+        if (lockService.isProtectedStructure(event.getBlock())) {
             event.setCancelled(true);
         }
     }
@@ -319,27 +343,29 @@ public final class LockListener implements Listener {
             return false;
         }
 
-        LockInfo lock = lockService.findManagedSignLock(clicked);
-        if (lock == null) {
-            return false;
-        }
-
-        if (lockService.canManage(lock, player)) {
-            event.setCancelled(true);
-            if (player.isSneaking() || guiService == null) {
-                player.openSign(sign);
-            } else {
-                guiService.openFor(player, sign);
-            }
-            return true;
-        }
-
-        if (player.isSneaking() || guiService == null || !lockService.canAccess(lock, player)) {
+        if (!lockService.isManagedHeaderLine(sign.getLine(0))) {
             return false;
         }
 
         event.setCancelled(true);
-        guiService.openFor(player, sign);
+        event.setUseInteractedBlock(Result.DENY);
+        event.setUseItemInHand(Result.DENY);
+
+        LockInfo lock = lockService.findManagedSignLock(clicked);
+        if (lock == null) {
+            return true;
+        }
+
+        if (guiService == null) {
+            return true;
+        }
+
+        if (!lockService.canAccess(lock, player)) {
+            player.sendMessage(config.protectedSignMessage());
+            return true;
+        }
+
+        nextTick.accept(() -> guiService.openFor(player, sign));
         return true;
     }
 

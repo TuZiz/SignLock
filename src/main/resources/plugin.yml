@@ -3,3 +3,20 @@ version: '1.0-SNAPSHOT'
 main: ym.signLock.SignLock
 api-version: '1.21'
 authors: [ ymxc ]
+description: 基于牌子的容器与门权限保护插件，兼容 Spigot 与 Folia
+folia-supported: true
+commands:
+  signlock:
+    description: SignLock 主命令
+    usage: /signlock <reload|add|remove|info>
+    aliases: [bl]
+permissions:
+  signlock.admin:
+    description: 绕过牌子锁所有权检查
+    default: op
+  signlock.reload:
+    description: 重载 SignLock 配置
+    default: op
+  signlock.add:
+    description: 管理牌子锁授权玩家
+    default: true

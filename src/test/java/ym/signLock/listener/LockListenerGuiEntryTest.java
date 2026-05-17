@@ -74,7 +74,7 @@ class LockListenerGuiEntryTest {
     }
 
     @Test
-    void ownerSneakRightClickKeepsNativeSignEditorFallback() {
+    void ownerSneakRightClickStillOpensManagementGui() {
         Block chest = world.getBlockAt(10, 64, 0);
         chest.setType(Material.CHEST);
         Sign sign = placeManagedWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
@@ -85,12 +85,12 @@ class LockListenerGuiEntryTest {
         listener.onPlayerInteract(event);
 
         assertTrue(event.isCancelled());
-        verify(owner).openSign(any(Sign.class));
-        verify(guiService, never()).openFor(any(Player.class), any(Sign.class));
+        verify(guiService).openFor(owner, sign);
+        verify(owner, never()).openSign(any(Sign.class));
     }
 
     @Test
-    void nonOwnerCannotOpenManagementGui() {
+    void nonOwnerManagedSignInteractionIsInterceptedBeforeVanillaEditing() {
         Block chest = world.getBlockAt(20, 64, 0);
         chest.setType(Material.CHEST);
         Sign sign = placeManagedWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
@@ -100,15 +100,50 @@ class LockListenerGuiEntryTest {
 
         listener.onPlayerInteract(event);
 
-        assertFalse(event.isCancelled());
+        assertTrue(event.isCancelled());
         verify(guiService, never()).openFor(any(Player.class), any(Sign.class));
         verify(intruder, never()).openSign(any(Sign.class));
+        verify(intruder).sendMessage(config.protectedSignMessage());
+    }
+
+    @Test
+    void ownerNormalRightClickOpensGuiForLegacyHeaderWhenConfigUsesChineseDefaults() {
+        SignLockConfig chineseConfig = createChineseConfig();
+        LockListener chineseListener = new LockListener(
+                new LockService(chineseConfig, playerIdentityService),
+                playerIdentityService,
+                chineseConfig,
+                guiService
+        );
+
+        Block chest = world.getBlockAt(30, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign sign = placeManagedWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+
+        Player owner = mockPlayer("Owner", false);
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.RIGHT_CLICK_BLOCK, null, sign.getBlock(), BlockFace.UP);
+
+        chineseListener.onPlayerInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(guiService).openFor(owner, sign);
+        verify(owner, never()).openSign(any(Sign.class));
     }
 
     private SignLockConfig createConfig() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("signs.lock-header", "[private]");
         yaml.set("signs.more-users-header", "[more users]");
+        yaml.set("protection.max-more-user-signs", 4);
+        yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
+        yaml.set("protection.lockable-materials", List.of("CHEST", "BARREL", "SHULKER_BOX"));
+        return new SignLockConfig(yaml);
+    }
+
+    private SignLockConfig createChineseConfig() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("signs.lock-header", "[锁]");
+        yaml.set("signs.more-users-header", "[更多用户]");
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
         yaml.set("protection.lockable-materials", List.of("CHEST", "BARREL", "SHULKER_BOX"));

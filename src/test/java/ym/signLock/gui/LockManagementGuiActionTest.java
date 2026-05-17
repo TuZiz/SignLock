@@ -7,6 +7,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,8 +28,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class LockManagementGuiActionTest {
@@ -72,19 +75,48 @@ class LockManagementGuiActionTest {
     }
 
     @Test
-    void clickingAuthorizedPlayerSlotOnlyTogglesSelection() {
+    void shiftRightClickOnAuthorizedPlayerSlotRemovesPlayerImmediately() {
         Block chest = world.getBlockAt(0, 64, 0);
         chest.setType(Material.CHEST);
         Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
         LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
         Player owner = mockPlayer("Owner");
 
-        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0]);
+        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0], true, true);
+
+        Sign updated = (Sign) primary.getBlock().getState();
+        assertEquals("", updated.getLine(2));
+        verify(owner).sendMessage(config.removeSuccessMessage("Alice"));
+        verify(guiService).openFor(owner, holder.session());
+    }
+
+    @Test
+    void plainClickOnAuthorizedPlayerSlotDoesNothing() {
+        Block chest = world.getBlockAt(5, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
+        Player owner = mockPlayer("Owner");
+
+        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0], false, false);
 
         Sign unchanged = (Sign) primary.getBlock().getState();
         assertEquals("Alice", unchanged.getLine(2));
-        assertTrue(holder.isSelected(LockManagementGui.PLAYER_SLOTS[0]));
-        verify(guiService).openFor(owner, holder);
+        verify(guiService, never()).openFor(owner, holder.session());
+    }
+
+    @Test
+    void inventoryRendersAuthorizedPlayersAsHeads() {
+        Block chest = world.getBlockAt(7, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
+
+        var inventory = realGuiService.buildInventory(holder);
+        var playerItem = inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]);
+
+        assertEquals(Material.PLAYER_HEAD, playerItem.getType());
+        assertInstanceOf(SkullMeta.class, playerItem.getItemMeta());
     }
 
     @Test
@@ -95,7 +127,7 @@ class LockManagementGuiActionTest {
         LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
         Player owner = mockPlayer("Owner");
 
-        actionService.handleClick(owner, holder, LockManagementGui.ADD_SLOT);
+        actionService.handleClick(owner, holder, LockManagementGui.ADD_SLOT, false, false);
 
         assertTrue(pendingInputStore.hasPendingAdd(owner.getUniqueId()));
         verify(owner).closeInventory();
@@ -134,7 +166,7 @@ class LockManagementGuiActionTest {
         );
         Player viewer = mockPlayer("Viewer");
 
-        actionService.handleClick(viewer, holder, LockManagementGui.ADD_SLOT);
+        actionService.handleClick(viewer, holder, LockManagementGui.ADD_SLOT, false, false);
 
         assertTrue(!pendingInputStore.hasPendingAdd(viewer.getUniqueId()));
         verify(viewer).sendMessage(config.guiReadOnlyMessage());

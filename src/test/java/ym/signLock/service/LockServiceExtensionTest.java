@@ -82,12 +82,81 @@ class LockServiceExtensionTest {
         assertTrue(lockService.findLock(leftHalf).allowedPlayers().contains("Bob"));
     }
 
+    @Test
+    void legacyEnglishHeadersRemainReadableAndWritableUnderChineseConfig() {
+        lockService = new LockService(createChineseConfig(), Mockito.mock(PlayerIdentityService.class));
+
+        Block chest = world.getBlockAt(20, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        Sign extension = lockService.createMoreUsersSign(chest, Material.OAK_WALL_SIGN);
+        assertNotNull(extension);
+        extension.setLine(0, "[more users]");
+        extension.setLine(1, "");
+        extension.setLine(2, "");
+        extension.setLine(3, "");
+        extension.update(true, false);
+
+        LockService.LockInfo lock = lockService.findManagedSignLock(primary.getBlock());
+        LockService.LockInfo extensionLock = lockService.findManagedSignLock(extension.getBlock());
+        assertNotNull(lock);
+        assertNotNull(extensionLock);
+
+        LockService.AddPlayerResult addResult = lockService.addPlayerToLock(extension, lock, "Carol");
+
+        assertTrue(lock.allowedPlayers().contains("Alice"));
+        assertEquals(LockService.AddPlayerResult.ADDED, addResult);
+
+        Sign updatedExtension = (Sign) extension.getBlock().getState();
+        assertEquals("Carol", updatedExtension.getLine(1));
+    }
+
+    @Test
+    void extensionCreationFallsBackToUpFaceWhenHorizontalFacesAreBlocked() {
+        lockService = new LockService(createSixFaceConfig(), Mockito.mock(PlayerIdentityService.class));
+
+        Block chest = world.getBlockAt(30, 64, 0);
+        chest.setType(Material.CHEST);
+        placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
+
+        chest.getRelative(BlockFace.NORTH).setType(Material.STONE);
+        chest.getRelative(BlockFace.SOUTH).setType(Material.STONE);
+        chest.getRelative(BlockFace.EAST).setType(Material.STONE);
+        chest.getRelative(BlockFace.WEST).setType(Material.STONE);
+
+        Sign extension = lockService.createMoreUsersSign(chest, Material.OAK_WALL_SIGN);
+
+        assertNotNull(extension);
+        assertEquals(chest.getY() + 1, extension.getBlock().getY());
+        assertEquals("[more users]", extension.getLine(0));
+    }
+
     private SignLockConfig createConfig() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("signs.lock-header", "[private]");
         yaml.set("signs.more-users-header", "[more users]");
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", java.util.List.of("NORTH", "SOUTH", "EAST", "WEST"));
+        yaml.set("protection.lockable-materials", java.util.List.of("CHEST"));
+        return new SignLockConfig(yaml);
+    }
+
+    private SignLockConfig createChineseConfig() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("signs.lock-header", "[锁]");
+        yaml.set("signs.more-users-header", "[更多用户]");
+        yaml.set("protection.max-more-user-signs", 4);
+        yaml.set("protection.extension-placement-order", java.util.List.of("NORTH", "SOUTH", "EAST", "WEST"));
+        yaml.set("protection.lockable-materials", java.util.List.of("CHEST"));
+        return new SignLockConfig(yaml);
+    }
+
+    private SignLockConfig createSixFaceConfig() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("signs.lock-header", "[private]");
+        yaml.set("signs.more-users-header", "[more users]");
+        yaml.set("protection.max-more-user-signs", 6);
+        yaml.set("protection.extension-placement-order", java.util.List.of("NORTH", "SOUTH", "EAST", "WEST", "UP", "DOWN"));
         yaml.set("protection.lockable-materials", java.util.List.of("CHEST"));
         return new SignLockConfig(yaml);
     }

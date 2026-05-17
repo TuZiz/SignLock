@@ -9,6 +9,7 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,14 @@ import ym.signLock.service.PlayerIdentityService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -73,47 +76,52 @@ class LockManagementBatchGuiTest {
     }
 
     @Test
-    void playerSlotClickTogglesSelectionAndConfirmRemovesSelectedPlayers() {
+    void shiftRightClickOnPlayerHeadRemovesOnlyThatPlayer() {
         Block chest = world.getBlockAt(0, 64, 0);
         chest.setType(Material.CHEST);
         Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "Bob");
         LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
         Player owner = mockPlayer("Owner");
 
-        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0]);
-        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[1]);
-
-        assertTrue(holder.isSelected(LockManagementGui.PLAYER_SLOTS[0]));
-        assertTrue(holder.isSelected(LockManagementGui.PLAYER_SLOTS[1]));
-
-        actionService.handleClick(owner, holder, LockManagementGui.REMOVE_SELECTED_SLOT);
+        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0], true, true);
 
         Sign updated = (Sign) primary.getBlock().getState();
         assertEquals("", updated.getLine(2));
-        assertEquals("", updated.getLine(3));
-        verify(owner).sendMessage(contains("批量移除完成"));
-        verify(owner).sendMessage(contains("Alice"));
-        verify(owner).sendMessage(contains("Bob"));
+        assertEquals("Bob", updated.getLine(3));
+        assertEquals(Set.of("Bob"), Set.copyOf(lockService.describeLock(primary.getBlock()).allowedPlayers()));
+        verify(owner).sendMessage(config.removeSuccessMessage("Alice"));
         verify(guiService).openFor(owner, holder.session());
     }
 
     @Test
-    void inventoryHighlightsSelectedPlayersAndRemoveButtonCount() {
+    void inventoryUsesPlayerHeadsAndShiftRightRemoveHint() {
         Block chest = world.getBlockAt(10, 64, 0);
         chest.setType(Material.CHEST);
         Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
         LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
 
-        holder.toggleSelectedPlayer(LockManagementGui.PLAYER_SLOTS[0]);
         var inventory = realGuiService.buildInventory(holder);
 
-        ItemStack selectedPlayer = inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]);
-        ItemStack removeButton = inventory.getItem(LockManagementGui.REMOVE_SELECTED_SLOT);
-        assertEquals(Material.RED_DYE, selectedPlayer.getType());
-        assertEquals(
-                ChatColor.stripColor(config.guiRemoveSelectedButtonLabel(1)),
-                ChatColor.stripColor(removeButton.getItemMeta().getDisplayName())
-        );
+        ItemStack playerHead = inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]);
+        assertEquals(Material.PLAYER_HEAD, playerHead.getType());
+        assertInstanceOf(SkullMeta.class, playerHead.getItemMeta());
+        assertEquals("Alice", ChatColor.stripColor(playerHead.getItemMeta().getDisplayName()));
+        assertNull(inventory.getItem(LockManagementGui.REMOVE_SELECTED_SLOT));
+    }
+
+    @Test
+    void plainClickDoesNotRemovePlayer() {
+        Block chest = world.getBlockAt(20, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+        LockManagementGuiHolder holder = realGuiService.createHolder(primary.getBlock());
+        Player owner = mockPlayer("Owner");
+
+        actionService.handleClick(owner, holder, LockManagementGui.PLAYER_SLOTS[0], false, false);
+
+        Sign unchanged = (Sign) primary.getBlock().getState();
+        assertEquals("Alice", unchanged.getLine(2));
+        verify(guiService, never()).openFor(owner, holder.session());
     }
 
     private SignLockConfig createConfig() {

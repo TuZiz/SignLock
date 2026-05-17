@@ -84,9 +84,10 @@ class LockListenerViewerSummaryEntryTest {
 
         listener.onPlayerInteract(event);
 
-        assertFalse(event.isCancelled());
+        assertTrue(event.isCancelled());
         verify(guiService, never()).openFor(any(Player.class), any(Sign.class));
         verify(intruder, never()).openSign(any(Sign.class));
+        verify(intruder).sendMessage(config.protectedSignMessage());
     }
 
     private SignLockConfig createConfig() {

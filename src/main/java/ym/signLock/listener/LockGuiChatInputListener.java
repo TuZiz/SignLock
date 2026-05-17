@@ -4,6 +4,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.entity.Player;
 import ym.signLock.gui.LockManagementGuiActionService;
 import ym.signLock.gui.LockManagementPendingInputStore;
 
@@ -25,14 +26,30 @@ public final class LockGuiChatInputListener implements Listener {
         this.actionService = actionService;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
-        if (!pendingInputStore.hasPendingAdd(event.getPlayer().getUniqueId())) {
-            return;
+        String message = event.getMessage();
+        if (capturePendingInput(event.getPlayer(), message)) {
+            suppressLegacyChat(event);
+        }
+    }
+
+    public boolean hasPendingAdd(Player player) {
+        return player != null && pendingInputStore.hasPendingAdd(player.getUniqueId());
+    }
+
+    public boolean capturePendingInput(Player player, String message) {
+        if (!hasPendingAdd(player)) {
+            return false;
         }
 
+        nextTick.accept(() -> actionService.handleChatInput(player, message));
+        return true;
+    }
+
+    private static void suppressLegacyChat(AsyncPlayerChatEvent event) {
         event.setCancelled(true);
-        String message = event.getMessage();
-        nextTick.accept(() -> actionService.handleChatInput(event.getPlayer(), message));
+        event.setMessage("");
+        event.getRecipients().clear();
     }
 }

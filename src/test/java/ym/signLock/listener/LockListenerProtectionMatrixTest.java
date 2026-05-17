@@ -11,6 +11,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -34,6 +36,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +74,41 @@ class LockListenerProtectionMatrixTest {
         InventoryMoveItemEvent destinationEvent = mockInventoryMoveEvent((Container) plainBarrel.getState(), (Container) protectedDestination.getState());
         listener.onInventoryMove(destinationEvent);
         verify(destinationEvent).setCancelled(true);
+    }
+
+    @Test
+    void inventoryMoveCancelsEvenWhenBothEndsAreLockedBySameOwner() {
+        Block protectedBarrel = protectedBarrel(24, 64, 0, "Owner");
+        Block lockedHopper = lockedHopper(25, 64, 0, "Owner");
+
+        InventoryMoveItemEvent pushIntoBarrel = mockInventoryMoveEvent(
+                (Container) lockedHopper.getState(),
+                (Container) protectedBarrel.getState()
+        );
+        listener.onInventoryMove(pushIntoBarrel);
+        verify(pushIntoBarrel).setCancelled(true);
+
+        InventoryMoveItemEvent pullFromBarrel = mockInventoryMoveEvent(
+                (Container) protectedBarrel.getState(),
+                (Container) lockedHopper.getState()
+        );
+        listener.onInventoryMove(pullFromBarrel);
+        verify(pullFromBarrel).setCancelled(true);
+    }
+
+    @Test
+    void inventoryMoveCancelsWhenLockedAutomationOwnersDiffer() {
+        Block protectedBarrel = protectedBarrel(28, 64, 0, "Owner");
+        Block lockedHopper = lockedHopper(29, 64, 0, "Intruder");
+
+        InventoryMoveItemEvent event = mockInventoryMoveEvent(
+                (Container) lockedHopper.getState(),
+                (Container) protectedBarrel.getState()
+        );
+
+        listener.onInventoryMove(event);
+
+        verify(event).setCancelled(true);
     }
 
     @Test
@@ -113,6 +151,34 @@ class LockListenerProtectionMatrixTest {
         when(outOfProtected.getToBlock()).thenReturn(adjacentAir);
         listener.onFluidFlow(outOfProtected);
         verify(outOfProtected).setCancelled(true);
+    }
+
+    @Test
+    void fireCannotBurnOrIgniteProtectedStructures() {
+        Block protectedBarrel = protectedBarrel(45, 64, 0, "Owner");
+        Sign managedSign = managedWallSign(protectedBarrel, BlockFace.SOUTH, "[more users]", "Guest", "", "");
+        Block plainBlock = world.getBlockAt(46, 64, 0);
+        plainBlock.setType(Material.OAK_PLANKS);
+
+        BlockBurnEvent protectedBurn = Mockito.mock(BlockBurnEvent.class);
+        when(protectedBurn.getBlock()).thenReturn(protectedBarrel);
+        listener.onBlockBurn(protectedBurn);
+        verify(protectedBurn).setCancelled(true);
+
+        BlockBurnEvent signBurn = Mockito.mock(BlockBurnEvent.class);
+        when(signBurn.getBlock()).thenReturn(managedSign.getBlock());
+        listener.onBlockBurn(signBurn);
+        verify(signBurn).setCancelled(true);
+
+        BlockIgniteEvent signIgnite = Mockito.mock(BlockIgniteEvent.class);
+        when(signIgnite.getBlock()).thenReturn(managedSign.getBlock());
+        listener.onBlockIgnite(signIgnite);
+        verify(signIgnite).setCancelled(true);
+
+        BlockBurnEvent plainBurn = Mockito.mock(BlockBurnEvent.class);
+        when(plainBurn.getBlock()).thenReturn(plainBlock);
+        listener.onBlockBurn(plainBurn);
+        verify(plainBurn, never()).setCancelled(true);
     }
 
     @Test
@@ -180,7 +246,7 @@ class LockListenerProtectionMatrixTest {
         yaml.set("protection.explosions", true);
         yaml.set("protection.max-more-user-signs", 4);
         yaml.set("protection.extension-placement-order", List.of("NORTH", "SOUTH", "EAST", "WEST"));
-        yaml.set("protection.lockable-materials", List.of("BARREL", "CHEST"));
+        yaml.set("protection.lockable-materials", List.of("BARREL", "CHEST", "HOPPER"));
         return new SignLockConfig(yaml);
     }
 
@@ -207,6 +273,13 @@ class LockListenerProtectionMatrixTest {
         barrel.setType(Material.BARREL);
         managedWallSign(barrel, BlockFace.NORTH, "[private]", owner, "", "");
         return barrel;
+    }
+
+    private Block lockedHopper(int x, int y, int z, String owner) {
+        Block hopper = world.getBlockAt(x, y, z);
+        hopper.setType(Material.HOPPER);
+        managedWallSign(hopper, BlockFace.NORTH, "[private]", owner, "", "");
+        return hopper;
     }
 
     private void configureDoubleChest(Block leftHalf, Block rightHalf, BlockFace facing) {

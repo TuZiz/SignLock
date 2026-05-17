@@ -14,6 +14,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 import org.mockito.Mockito;
+import ym.signLock.config.LockGuiConfig;
 import ym.signLock.config.SignLockConfig;
 import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
@@ -22,12 +23,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class LockManagementReadOnlyGuiTest {
 
     private ServerMock server;
     private WorldMock world;
     private SignLockConfig config;
+    private LockGuiConfig guiConfig;
     private LockService lockService;
     private LockManagementGuiService guiService;
 
@@ -36,9 +39,10 @@ class LockManagementReadOnlyGuiTest {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
         config = createConfig();
+        guiConfig = createGuiConfig();
         PlayerIdentityService playerIdentityService = Mockito.mock(PlayerIdentityService.class);
         lockService = new LockService(config, playerIdentityService);
-        guiService = new LockManagementGuiService(lockService, config);
+        guiService = new LockManagementGuiService(lockService, config, guiConfig);
     }
 
     @AfterEach
@@ -62,7 +66,7 @@ class LockManagementReadOnlyGuiTest {
 
         assertNotNull(inventory.getItem(LockManagementGui.ADD_SLOT));
         assertEquals("Read only", ChatColor.stripColor(inventory.getItem(LockManagementGui.ADD_SLOT).getItemMeta().getDisplayName()));
-        assertEquals("Read only", ChatColor.stripColor(inventory.getItem(LockManagementGui.REMOVE_SELECTED_SLOT).getItemMeta().getDisplayName()));
+        assertNull(inventory.getItem(LockManagementGui.REMOVE_SELECTED_SLOT));
         assertEquals("Alice", ChatColor.stripColor(inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]).getItemMeta().getDisplayName()));
         assertEquals("Access", ChatColor.stripColor(inventory.getItem(LockManagementGui.SCOPE_SLOT).getItemMeta().getDisplayName()));
     }
@@ -78,6 +82,14 @@ class LockManagementReadOnlyGuiTest {
         yaml.set("messages.scope-access-label", "Access");
         yaml.set("messages.gui-read-only-button", "Read only");
         return new SignLockConfig(yaml);
+    }
+
+    private LockGuiConfig createGuiConfig() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("gui.items.scope-read-only.name", "%scope%");
+        yaml.set("gui.items.player-read-only.name", "%player%");
+        yaml.set("gui.items.read-only-action.name", "Read only");
+        return new LockGuiConfig(yaml);
     }
 
     private Sign placeWallSign(Block target, BlockFace signFace, String... lines) {

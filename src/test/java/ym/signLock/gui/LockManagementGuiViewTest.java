@@ -15,6 +15,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 import org.mockito.Mockito;
+import ym.signLock.config.LockGuiConfig;
 import ym.signLock.config.SignLockConfig;
 import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
@@ -30,6 +31,7 @@ class LockManagementGuiViewTest {
     private ServerMock server;
     private WorldMock world;
     private SignLockConfig config;
+    private LockGuiConfig guiConfig;
     private LockService lockService;
     private LockManagementGuiService guiService;
 
@@ -38,9 +40,10 @@ class LockManagementGuiViewTest {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
         config = createConfig();
+        guiConfig = createGuiConfig();
         PlayerIdentityService playerIdentityService = Mockito.mock(PlayerIdentityService.class);
         lockService = new LockService(config, playerIdentityService);
-        guiService = new LockManagementGuiService(lockService, config);
+        guiService = new LockManagementGuiService(lockService, config, guiConfig);
     }
 
     @AfterEach
@@ -79,13 +82,13 @@ class LockManagementGuiViewTest {
         assertNotNull(holder);
 
         var inventory = guiService.buildInventory(holder);
-        assertEquals(ChatColor.stripColor(config.guiOwnerLabel("Owner")),
+        assertEquals("Owner Owner",
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.OWNER_SLOT).getItemMeta().getDisplayName()));
         assertEquals("Alice", ChatColor.stripColor(inventory.getItem(LockManagementGui.PLAYER_SLOTS[0]).getItemMeta().getDisplayName()));
         assertEquals("Bob", ChatColor.stripColor(inventory.getItem(LockManagementGui.PLAYER_SLOTS[1]).getItemMeta().getDisplayName()));
-        assertEquals(ChatColor.stripColor(config.guiAddButtonLabel()),
+        assertEquals("Add",
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.ADD_SLOT).getItemMeta().getDisplayName()));
-        assertEquals(ChatColor.stripColor(config.guiCloseButtonLabel()),
+        assertEquals("Close",
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.CLOSE_SLOT).getItemMeta().getDisplayName()));
         assertEquals("Scope Manage",
                 ChatColor.stripColor(inventory.getItem(LockManagementGui.SCOPE_SLOT).getItemMeta().getDisplayName()));
@@ -108,6 +111,38 @@ class LockManagementGuiViewTest {
         );
     }
 
+    @Test
+    void inventoryUsesConfiguredGuiLayoutAndItemsFromGuiYaml() {
+        YamlConfiguration guiYaml = new YamlConfiguration();
+        guiYaml.set("gui.title", "&1Custom Lock Panel");
+        guiYaml.set("gui.layout", List.of(
+                "#####SOT#",
+                "#########",
+                "IIIBRFC##"
+        ));
+        guiYaml.set("gui.items.owner.name", "Owner %owner%");
+        guiYaml.set("gui.items.add.material", "EMERALD");
+        guiYaml.set("gui.items.add.name", "&aCustom Add");
+        guiYaml.set("gui.items.player.material", "MAP");
+        guiYaml.set("gui.items.player.name", "&bPlayer %player%");
+
+        guiService = new LockManagementGuiService(lockService, config, new LockGuiConfig(guiYaml));
+
+        Block chest = world.getBlockAt(30, 64, 0);
+        chest.setType(Material.CHEST);
+        Sign primary = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "Alice", "");
+
+        LockManagementGuiHolder holder = guiService.createHolder(primary.getBlock());
+        assertNotNull(holder);
+
+        var inventory = guiService.buildInventory(holder);
+        assertEquals("Owner Owner", ChatColor.stripColor(inventory.getItem(6).getItemMeta().getDisplayName()));
+        assertEquals(Material.EMERALD, inventory.getItem(21).getType());
+        assertEquals("Custom Add", ChatColor.stripColor(inventory.getItem(21).getItemMeta().getDisplayName()));
+        assertEquals(Material.MAP, inventory.getItem(18).getType());
+        assertEquals("Player Alice", ChatColor.stripColor(inventory.getItem(18).getItemMeta().getDisplayName()));
+    }
+
     private SignLockConfig createConfig() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("signs.lock-header", "[private]");
@@ -120,6 +155,24 @@ class LockManagementGuiViewTest {
         yaml.set("messages.target-summary-double-chest", "Double chest %world% %x% %y% %z%");
         yaml.set("messages.gui-target-summary-label", "Target %target%");
         return new SignLockConfig(yaml);
+    }
+
+    private LockGuiConfig createGuiConfig() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("gui.title", "&8Test GUI");
+        yaml.set("gui.items.owner.name", "Owner %owner%");
+        yaml.set("gui.items.target.name", "Target %target%");
+        yaml.set("gui.items.extensions.name", "Extensions %count%");
+        yaml.set("gui.items.scope-manage.name", "Scope %scope%");
+        yaml.set("gui.items.scope-read-only.name", "Scope %scope%");
+        yaml.set("gui.items.player.name", "%player%");
+        yaml.set("gui.items.player-selected.name", "%player%");
+        yaml.set("gui.items.player-read-only.name", "%player%");
+        yaml.set("gui.items.add.name", "Add");
+        yaml.set("gui.items.close.name", "Close");
+        yaml.set("gui.items.refresh.name", "Refresh");
+        yaml.set("gui.items.read-only-action.name", "Read only");
+        return new LockGuiConfig(yaml);
     }
 
     private void configureDoubleChest(Block leftHalf, Block rightHalf, BlockFace facing) {

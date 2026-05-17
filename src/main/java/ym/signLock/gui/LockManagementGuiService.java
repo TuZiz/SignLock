@@ -4,6 +4,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import ym.signLock.config.LockGuiConfig;
 import ym.signLock.config.SignLockConfig;
 import ym.signLock.service.LockService;
 
@@ -11,14 +12,24 @@ public final class LockManagementGuiService {
 
     private final LockService lockService;
     private SignLockConfig config;
+    private LockGuiConfig guiConfig;
 
     public LockManagementGuiService(LockService lockService, SignLockConfig config) {
+        this(lockService, config, new LockGuiConfig(new org.bukkit.configuration.file.YamlConfiguration()));
+    }
+
+    public LockManagementGuiService(LockService lockService, SignLockConfig config, LockGuiConfig guiConfig) {
         this.lockService = lockService;
         this.config = config;
+        this.guiConfig = guiConfig;
     }
 
     public void setConfig(SignLockConfig config) {
         this.config = config;
+    }
+
+    public void setGuiConfig(LockGuiConfig guiConfig) {
+        this.guiConfig = guiConfig;
     }
 
     public boolean openFor(Player player, Sign sign) {
@@ -54,7 +65,8 @@ public final class LockManagementGuiService {
         }
         return new LockManagementGuiHolder(
                 LockManagementSession.from(lock),
-                LockSummaryView.from(lock, details, LockService.LockViewerScope.MANAGE)
+                LockSummaryView.from(lock, details, LockService.LockViewerScope.MANAGE),
+                guiConfig
         );
     }
 
@@ -68,10 +80,10 @@ public final class LockManagementGuiService {
         if (viewerScope == LockService.LockViewerScope.DENIED) {
             return null;
         }
-        return new LockManagementGuiHolder(LockManagementSession.from(lock), LockSummaryView.from(lock, details, viewerScope));
+        return new LockManagementGuiHolder(LockManagementSession.from(lock), LockSummaryView.from(lock, details, viewerScope), guiConfig);
     }
 
     Inventory buildInventory(LockManagementGuiHolder holder) {
-        return LockManagementGui.createInventory(holder, config);
+        return LockManagementGui.createInventory(holder, config, guiConfig);
     }
 }

@@ -10,7 +10,9 @@ import ym.signLock.gui.LockManagementPendingInputStore;
 import ym.signLock.gui.LockManagementSession;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,10 +38,12 @@ class LockGuiChatInputTest {
         AsyncPlayerChatEvent event = Mockito.mock(AsyncPlayerChatEvent.class);
         when(event.getPlayer()).thenReturn(player);
         when(event.getMessage()).thenReturn("Guest");
+        when(event.getRecipients()).thenReturn(new HashSet<>());
 
         listener.onAsyncPlayerChat(event);
 
         verify(event).setCancelled(true);
+        verify(event).setMessage("");
         verify(actionService, never()).handleChatInput(player, "Guest");
         assertEquals(1, queuedTasks.size());
 
@@ -59,10 +63,27 @@ class LockGuiChatInputTest {
 
         AsyncPlayerChatEvent event = Mockito.mock(AsyncPlayerChatEvent.class);
         when(event.getPlayer()).thenReturn(player);
+        when(event.getRecipients()).thenReturn(Set.of());
 
         listener.onAsyncPlayerChat(event);
 
         verify(event, never()).setCancelled(true);
+        verify(actionService, never()).handleChatInput(Mockito.any(Player.class), Mockito.anyString());
+    }
+
+    @Test
+    void capturePendingInputReturnsFalseWhenPlayerHasNoPendingState() {
+        LockManagementPendingInputStore pendingInputStore = new LockManagementPendingInputStore();
+        LockManagementGuiActionService actionService = Mockito.mock(LockManagementGuiActionService.class);
+        LockGuiChatInputListener listener = new LockGuiChatInputListener(task -> {
+        }, pendingInputStore, actionService);
+
+        Player player = Mockito.mock(Player.class);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        boolean captured = listener.capturePendingInput(player, "Guest");
+
+        assertEquals(false, captured);
         verify(actionService, never()).handleChatInput(Mockito.any(Player.class), Mockito.anyString());
     }
 }

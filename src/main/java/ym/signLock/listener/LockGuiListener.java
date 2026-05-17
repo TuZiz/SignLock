@@ -39,7 +39,9 @@ public final class LockGuiListener implements Listener {
             return;
         }
 
-        nextTick.accept(() -> actionService.handleClick(player, holder, rawSlot));
+        boolean rightClick = event.isRightClick();
+        boolean shiftClick = event.isShiftClick();
+        nextTick.accept(() -> actionService.handleClick(player, holder, rawSlot, rightClick, shiftClick));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

@@ -15,10 +15,13 @@ protection:
     - SOUTH
     - EAST
     - WEST
+    - UP
+    - DOWN
   # 可直接贴锁牌的方块列表。保留英文材质名即可。
   lockable-materials:
     - CHEST
     - TRAPPED_CHEST
+    - ENDER_CHEST
     - BARREL
     - FURNACE
     - BLAST_FURNACE

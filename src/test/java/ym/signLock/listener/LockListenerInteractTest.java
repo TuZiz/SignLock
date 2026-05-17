@@ -18,6 +18,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 import org.mockito.Mockito;
 import ym.signLock.config.SignLockConfig;
+import ym.signLock.gui.LockManagementGuiService;
 import ym.signLock.service.LockService;
 import ym.signLock.service.PlayerIdentityService;
 
@@ -39,6 +40,7 @@ class LockListenerInteractTest {
     private WorldMock world;
     private SignLockConfig config;
     private PlayerIdentityService playerIdentityService;
+    private LockManagementGuiService guiService;
     private LockListener listener;
 
     @BeforeEach
@@ -47,7 +49,8 @@ class LockListenerInteractTest {
         world = server.addSimpleWorld("world");
         config = createConfig();
         playerIdentityService = Mockito.mock(PlayerIdentityService.class);
-        listener = new LockListener(new LockService(config, playerIdentityService), playerIdentityService, config);
+        guiService = Mockito.mock(LockManagementGuiService.class);
+        listener = new LockListener(new LockService(config, playerIdentityService), playerIdentityService, config, guiService);
     }
 
     @AfterEach
@@ -99,7 +102,7 @@ class LockListenerInteractTest {
     }
 
     @Test
-    void ownerCanStillOpenManagedSignEditor() {
+    void ownerRightClickOnManagedSignPrefersGuiOverVanillaSignEditor() {
         Block chest = world.getBlockAt(20, 64, 0);
         chest.setType(Material.CHEST);
         Sign sign = placeWallSign(chest, BlockFace.NORTH, "[private]", "Owner", "", "");
@@ -110,7 +113,8 @@ class LockListenerInteractTest {
         listener.onPlayerInteract(event);
 
         assertTrue(event.isCancelled());
-        verify(owner).openSign(any(Sign.class));
+        verify(guiService).openFor(owner, sign);
+        verify(owner, never()).openSign(any(Sign.class));
         verify(owner, never()).sendMessage(config.lockedUseMessage());
     }
 

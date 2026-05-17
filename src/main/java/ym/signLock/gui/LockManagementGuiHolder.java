@@ -1,5 +1,7 @@
 package ym.signLock.gui;
 
+import ym.signLock.config.LockGuiConfig;
+
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
@@ -13,17 +15,24 @@ public final class LockManagementGuiHolder implements InventoryHolder {
 
     private final LockManagementSession session;
     private final LockSummaryView view;
+    private final LockGuiConfig guiConfig;
     private final Map<Integer, String> removablePlayersBySlot = new HashMap<>();
     private final Set<String> selectedPlayers = new LinkedHashSet<>();
     private Inventory inventory;
 
     public LockManagementGuiHolder(LockManagementSession session, LockSummaryView view) {
+        this(session, view, new LockGuiConfig(new org.bukkit.configuration.file.YamlConfiguration()));
+    }
+
+    public LockManagementGuiHolder(LockManagementSession session, LockSummaryView view, LockGuiConfig guiConfig) {
         this.session = session;
         this.view = view;
+        this.guiConfig = guiConfig;
         if (view.canManage()) {
             List<String> players = view.allowedPlayers();
-            for (int index = 0; index < players.size() && index < LockManagementGui.PLAYER_SLOTS.length; index++) {
-                removablePlayersBySlot.put(LockManagementGui.PLAYER_SLOTS[index], players.get(index));
+            int[] playerSlots = guiConfig.playerSlots();
+            for (int index = 0; index < players.size() && index < playerSlots.length; index++) {
+                removablePlayersBySlot.put(playerSlots[index], players.get(index));
             }
         }
     }
@@ -34,6 +43,10 @@ public final class LockManagementGuiHolder implements InventoryHolder {
 
     public LockSummaryView view() {
         return view;
+    }
+
+    public LockGuiConfig guiConfig() {
+        return guiConfig;
     }
 
     public void bindInventory(Inventory inventory) {

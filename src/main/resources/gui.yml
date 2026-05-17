@@ -1,0 +1,170 @@
+gui:
+  title: "&8&lSignLock &0▸ &8权限管理"
+
+  # 字符串布局：每行必须 9 个字符。
+  # # = 留空
+  # O = owner
+  # T = target
+  # E = extensions
+  # S = scope
+  # I = 玩家列表区域
+  # R = remove-selected
+  # B = add
+  # F = refresh
+  # C = close
+  layout:
+    - "XXXXSXXXF"
+    - "XXOXTXEXX"
+    - "XIIIIIIIX"
+    - "XIIIIIIIX"
+    - "XXXXXXXXX"
+    - "XBXXCXXXX"
+
+  # 如果你想换成自己的字符，也可以在这里改映射。
+  legend:
+    owner: "O"
+    target: "T"
+    extensions: "E"
+    scope: "S"
+    players: "I"
+    remove-selected: "R"
+    add: "B"
+    refresh: "F"
+    close: "C"
+
+  items:
+    owner:
+      material: OAK_SIGN
+      name: "&6&l| &e所有者信息"
+      lore:
+        - ""
+        - "&8▸ &7当前主人: &f%owner%"
+        - "&8▸ &7权限级别: &6最高拥有者"
+        - ""
+        - "&e✦ 拥有对此锁的绝对控制权"
+
+    target:
+      material: CHEST
+      name: "&b&l| &3保护目标"
+      lore:
+        - ""
+        - "&8▸ &7容器类型: &f%target%"
+        - "&8▸ &7保护状态: &a✔ 已锁定"
+        - ""
+        - "&7当前锁正在作用于此目标"
+
+    extensions:
+      material: NAME_TAG
+      name: "&a&l| &2扩展牌状态"
+      lore:
+        - ""
+        - "&8▸ &7已用数量: &f%count% &7个"
+        - ""
+        - "&7贴上更多扩展牌可增加授权人数上限"
+
+    scope-manage:
+      material: WRITABLE_BOOK
+      name: "&d&l| &5当前管理模式"
+      lore:
+        - ""
+        - "&8▸ &7当前状态: &f%scope%"
+        - ""
+        - "&a✔ &7你当前处于 &a管理模式"
+        - "&7(可自由添加或移除授权玩家)"
+
+    scope-read-only:
+      material: BOOK
+      name: "&7&l| &8当前只读模式"
+      lore:
+        - ""
+        - "&8▸ &7当前状态: &f%scope%"
+        - ""
+        - "&c✘ &7你当前处于 &c只读模式"
+        - "&7(仅能查看名单，无权修改)"
+
+    players-hidden:
+      material: BARRIER
+      name: "&c&l| &c名单已隐藏"
+      lore:
+        - ""
+        - "&8▪ &7由于权限限制，名单对你不可见。"
+        - "&8▪ &7只有该锁的主人和已授权者可查看。"
+
+    no-players:
+      material: BARRIER
+      name: "&7&l| &7暂无授权玩家"
+      lore:
+        - ""
+        - "&8▪ &7当前还没有添加任何额外授权。"
+        - ""
+        - "&e👉 点击右下角的 &a[+] &e按钮开始授权"
+
+    player:
+      material: PLAYER_HEAD
+      name: "&f✦ &b%player% &f✦"
+      lore:
+        - ""
+        - "&8▸ &7状态: &a已授权"
+        - ""
+        - "&c▶ Shift + 右键立即移除授权"
+
+    player-selected:
+      material: PLAYER_HEAD
+      name: "&f✦ &b%player% &f✦"
+      lore:
+        - ""
+        - "&8▸ &7状态: &a已授权"
+        - ""
+        - "&c▶ Shift + 右键立即移除授权"
+
+    player-read-only:
+      material: PLAYER_HEAD
+      name: "&f✦ &7%player% &f✦"
+      lore:
+        - ""
+        - "&8▸ &7状态: &a已授权"
+        - ""
+        - "&8(你只有查看权限，无法操作)"
+
+    remove-selected:
+      material: REDSTONE
+      name: "&c&l[Shift+右键] &c移除说明"
+      lore:
+        - ""
+        - "&8▪ &7对玩家头颅使用 Shift + 右键"
+        - "&8▪ &7即可直接移除该玩家授权"
+
+    add:
+      material: LIME_DYE
+      name: "&a&l[+] &a添加新的授权"
+      lore:
+        - ""
+        - "&8▪ &7点击后界面将关闭，请在聊天栏"
+        - "&8▪ &7输入需要授权的玩家名。"
+        - ""
+        - "&7💡 &8支持空格或逗号分隔多个玩家"
+        - ""
+        - "&e👉 点击发起添加"
+
+    refresh:
+      material: CLOCK
+      name: "&e&l[↺] &e刷新界面"
+      lore:
+        - ""
+        - "&8▪ &7重新读取当前锁的最新状态"
+        - ""
+        - "&e👉 点击刷新"
+
+    close:
+      material: BARRIER
+      name: "&c&l[×] &c关闭菜单"
+      lore:
+        - ""
+        - "&e👉 点击关闭当前界面"
+
+    read-only-action:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&8&l[?] &7无权操作"
+      lore:
+        - ""
+        - "&c✘ 你当前只能查看，不能修改"

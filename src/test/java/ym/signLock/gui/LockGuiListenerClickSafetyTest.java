@@ -28,6 +28,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,15 +75,17 @@ class LockGuiListenerClickSafetyTest {
         when(event.getView()).thenReturn(view);
         when(event.getWhoClicked()).thenReturn(player);
         when(event.getRawSlot()).thenReturn(LockManagementGui.ADD_SLOT);
+        when(event.isRightClick()).thenReturn(false);
+        when(event.isShiftClick()).thenReturn(false);
 
         listener.onInventoryClick(event);
 
         verify(event).setCancelled(true);
-        verify(actionService, never()).handleClick(player, holder, LockManagementGui.ADD_SLOT);
+        verify(actionService, never()).handleClick(player, holder, LockManagementGui.ADD_SLOT, false, false);
         assertEquals(1, queuedTasks.size());
 
         queuedTasks.get(0).run();
-        verify(actionService).handleClick(player, holder, LockManagementGui.ADD_SLOT);
+        verify(actionService).handleClick(player, holder, LockManagementGui.ADD_SLOT, false, false);
     }
 
     @Test
@@ -99,7 +102,13 @@ class LockGuiListenerClickSafetyTest {
         listener.onInventoryClick(event);
 
         verify(event).setCancelled(true);
-        verify(actionService, never()).handleClick(Mockito.any(Player.class), Mockito.any(LockManagementGuiHolder.class), anyInt());
+        verify(actionService, never()).handleClick(
+                Mockito.any(Player.class),
+                Mockito.any(LockManagementGuiHolder.class),
+                anyInt(),
+                anyBoolean(),
+                anyBoolean()
+        );
         assertEquals(0, queuedTasks.size());
     }
 

@@ -3,11 +3,14 @@ package ym.signLock.gui;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
+import ym.signLock.config.LockGuiConfig;
 import ym.signLock.config.SignLockConfig;
 import ym.signLock.service.LockBatchAuthorizationService;
 import ym.signLock.service.LockBatchTargetParser;
 import ym.signLock.service.LockPlayerNameNormalizer;
 import ym.signLock.service.LockService;
+
+import java.util.List;
 
 public final class LockManagementGuiActionService {
 
@@ -18,6 +21,7 @@ public final class LockManagementGuiActionService {
     private final LockManagementGuiService guiService;
     private final LockManagementPendingInputStore pendingInputStore;
     private SignLockConfig config;
+    private LockGuiConfig guiConfig;
 
     public LockManagementGuiActionService(
             LockService lockService,
@@ -28,6 +32,28 @@ public final class LockManagementGuiActionService {
             LockManagementPendingInputStore pendingInputStore,
             SignLockConfig config
     ) {
+        this(
+                lockService,
+                batchTargetParser,
+                batchAuthorizationService,
+                playerNameNormalizer,
+                guiService,
+                pendingInputStore,
+                config,
+                new LockGuiConfig(new org.bukkit.configuration.file.YamlConfiguration())
+        );
+    }
+
+    public LockManagementGuiActionService(
+            LockService lockService,
+            LockBatchTargetParser batchTargetParser,
+            LockBatchAuthorizationService batchAuthorizationService,
+            LockPlayerNameNormalizer playerNameNormalizer,
+            LockManagementGuiService guiService,
+            LockManagementPendingInputStore pendingInputStore,
+            SignLockConfig config,
+            LockGuiConfig guiConfig
+    ) {
         this.lockService = lockService;
         this.batchTargetParser = batchTargetParser;
         this.batchAuthorizationService = batchAuthorizationService;
@@ -35,19 +61,26 @@ public final class LockManagementGuiActionService {
         this.guiService = guiService;
         this.pendingInputStore = pendingInputStore;
         this.config = config;
+        this.guiConfig = guiConfig;
     }
 
     public void setConfig(SignLockConfig config) {
         this.config = config;
     }
 
-    public void handleClick(Player player, LockManagementGuiHolder holder, int rawSlot) {
-        if (rawSlot == LockManagementGui.REFRESH_SLOT) {
+    public void setGuiConfig(LockGuiConfig guiConfig) {
+        this.guiConfig = guiConfig;
+    }
+
+    public void handleClick(Player player, LockManagementGuiHolder holder, int rawSlot, boolean rightClick, boolean shiftClick) {
+        LockGuiConfig activeGuiConfig = holder.guiConfig();
+
+        if (rawSlot == activeGuiConfig.refreshSlot()) {
             guiService.openFor(player, holder.session());
             return;
         }
 
-        if (rawSlot == LockManagementGui.CLOSE_SLOT) {
+        if (rawSlot == activeGuiConfig.closeSlot()) {
             player.closeInventory();
             return;
         }
@@ -57,22 +90,22 @@ public final class LockManagementGuiActionService {
             return;
         }
 
-        if (rawSlot == LockManagementGui.ADD_SLOT) {
+        if (rawSlot == activeGuiConfig.addSlot()) {
             pendingInputStore.beginAdd(player.getUniqueId(), holder.session());
             player.closeInventory();
             player.sendMessage(config.guiAddPromptMessage());
             return;
         }
 
-        if (rawSlot == LockManagementGui.REMOVE_SELECTED_SLOT) {
-            removeSelectedPlayers(player, holder);
+        if (rawSlot == activeGuiConfig.removeSelectedSlot()) {
             return;
         }
 
         String playerName = holder.removablePlayerAt(rawSlot);
         if (playerName != null) {
-            holder.toggleSelectedPlayer(rawSlot);
-            guiService.openFor(player, holder);
+            if (shiftClick && rightClick) {
+                removeSinglePlayer(player, holder.session(), playerName);
+            }
         }
     }
 
@@ -123,32 +156,28 @@ public final class LockManagementGuiActionService {
         guiService.openFor(player, pending.session());
     }
 
-    private void removeSelectedPlayers(Player player, LockManagementGuiHolder holder) {
-        if (!holder.hasSelection()) {
-            player.sendMessage(config.guiRemoveSelectionEmptyMessage());
-            guiService.openFor(player, holder);
-            return;
-        }
-
-        ResolvedLock resolvedLock = resolve(holder.session());
+    private void removeSinglePlayer(Player player, LockManagementSession session, String playerName) {
+        ResolvedLock resolvedLock = resolve(session);
         if (resolvedLock == null || !lockService.canManage(resolvedLock.lock(), player)) {
             player.sendMessage(config.addInvalidSignMessage());
             return;
         }
 
         LockBatchAuthorizationService.BatchRemoveSummary summary =
-                batchAuthorizationService.removePlayers(player, resolvedLock.sign(), resolvedLock.lock(), holder.selectedPlayers());
+                batchAuthorizationService.removePlayers(player, resolvedLock.sign(), resolvedLock.lock(), List.of(playerName));
         if (!summary.permitted()) {
             player.sendMessage(config.addOnlyOwnerMessage());
             return;
         }
 
-        player.sendMessage(config.batchRemoveSummaryMessage(
-                summary.removedPlayers(),
-                summary.notFoundPlayers(),
-                summary.ownerDeniedPlayers()
-        ));
-        guiService.openFor(player, holder.session());
+        if (!summary.removedPlayers().isEmpty()) {
+            player.sendMessage(config.removeSuccessMessage(summary.removedPlayers().get(0)));
+        } else if (!summary.ownerDeniedPlayers().isEmpty()) {
+            player.sendMessage(config.removeOwnerDeniedMessage());
+        } else if (!summary.notFoundPlayers().isEmpty()) {
+            player.sendMessage(config.removeNotFoundMessage(summary.notFoundPlayers().get(0)));
+        }
+        guiService.openFor(player, session);
     }
 
     private ResolvedLock resolve(LockManagementSession session) {

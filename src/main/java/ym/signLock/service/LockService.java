@@ -14,6 +14,7 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import ym.signLock.config.SignLockConfig;
 
@@ -26,6 +27,9 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class LockService {
+
+    private static final Set<String> PRIMARY_HEADER_ALIASES = Set.of("[private]", "[锁]");
+    private static final Set<String> EXTENSION_HEADER_ALIASES = Set.of("[more users]", "[更多用户]");
 
     private static final Set<BlockFace> ADJACENT_FACES = EnumSet.of(
             BlockFace.NORTH,
@@ -88,7 +92,7 @@ public final class LockService {
             return null;
         }
 
-        if (!header.equalsIgnoreCase(config.lockHeader()) && !header.equalsIgnoreCase(config.moreUsersHeader())) {
+        if (!isManagedHeader(header)) {
             return null;
         }
 
@@ -153,8 +157,19 @@ public final class LockService {
         return findManagedSignLock(block) != null;
     }
 
+    public boolean isManagedHeaderLine(String line) {
+        return isManagedHeader(normalizeLine(line));
+    }
+
     public boolean isProtectedAutomationTarget(Block block) {
         return isProtectedStructure(block);
+    }
+
+    public boolean shouldBlockAutomationMove(Block source, Block destination) {
+        LockInfo sourceLock = source == null ? null : findLock(source);
+        LockInfo destinationLock = destination == null ? null : findLock(destination);
+
+        return sourceLock != null || destinationLock != null;
     }
 
     public boolean containsProtectedStructure(Iterable<Block> blocks) {
@@ -235,7 +250,7 @@ public final class LockService {
             return false;
         }
 
-        for (BlockFace face : preferredPlacementFaces(clickedFace, true)) {
+        for (BlockFace face : preferredPlacementFaces(clickedFace, true, false)) {
             Sign placed = createSignOnFace(normalizedTarget, face, signBlockMaterial);
             if (placed == null) {
                 continue;
@@ -263,7 +278,7 @@ public final class LockService {
         }
 
         for (Block related : collectRelatedBlocks(normalizedTarget)) {
-            for (BlockFace face : preferredPlacementFaces(null, false)) {
+            for (BlockFace face : preferredPlacementFaces(null, false, true)) {
                 Sign placed = createSignOnFace(related, face, signMaterial);
                 if (placed == null) {
                     continue;
@@ -302,6 +317,20 @@ public final class LockService {
         return null;
     }
 
+    public Block resolveInventoryBlock(Inventory inventory) {
+        if (inventory == null) {
+            return null;
+        }
+
+        Block byHolder = resolveInventoryBlock(inventory.getHolder());
+        if (byHolder != null) {
+            return byHolder;
+        }
+
+        Location location = inventory.getLocation();
+        return location == null ? null : canonicalTarget(location.getBlock());
+    }
+
     private LockInfo findPrimaryLock(Block normalizedTarget) {
         if (normalizedTarget == null || !isLockable(normalizedTarget)) {
             return null;
@@ -315,7 +344,7 @@ public final class LockService {
                 }
 
                 String header = normalizeLine(sign.getLine(0));
-                if (header == null || !header.equalsIgnoreCase(config.lockHeader())) {
+                if (!isPrimaryHeader(header)) {
                     continue;
                 }
 
@@ -347,7 +376,7 @@ public final class LockService {
                 }
 
                 String header = normalizeLine(sign.getLine(0));
-                if (header == null || !header.equalsIgnoreCase(config.moreUsersHeader())) {
+                if (!isExtensionHeader(header)) {
                     continue;
                 }
 
@@ -510,10 +539,7 @@ public final class LockService {
 
     private boolean isManagedSignForTarget(Sign sign, Block normalizedTarget) {
         String header = normalizeLine(sign.getLine(0));
-        if (header == null) {
-            return false;
-        }
-        if (!header.equalsIgnoreCase(config.lockHeader()) && !header.equalsIgnoreCase(config.moreUsersHeader())) {
+        if (!isManagedHeader(header)) {
             return false;
         }
 
@@ -532,11 +558,11 @@ public final class LockService {
 
     private boolean tryWritePlayer(Sign sign, String playerName) {
         String header = normalizeLine(sign.getLine(0));
-        if (header == null) {
+        if (!isManagedHeader(header)) {
             return false;
         }
 
-        int startIndex = header.equalsIgnoreCase(config.lockHeader()) ? 2 : 1;
+        int startIndex = isPrimaryHeader(header) ? 2 : 1;
         for (int index = startIndex; index < 4; index++) {
             String line = normalizeLine(sign.getLine(index));
             if (line != null && sameIdentity(line, playerName)) {
@@ -557,11 +583,11 @@ public final class LockService {
 
     private boolean removePlayerFromSign(Sign sign, String playerName) {
         String header = normalizeLine(sign.getLine(0));
-        if (header == null) {
+        if (!isManagedHeader(header)) {
             return false;
         }
 
-        int startIndex = header.equalsIgnoreCase(config.lockHeader()) ? 2 : 1;
+        int startIndex = isPrimaryHeader(header) ? 2 : 1;
         for (int index = startIndex; index < 4; index++) {
             String line = normalizeLine(sign.getLine(index));
             if (line != null && sameIdentity(line, playerName)) {
@@ -575,7 +601,7 @@ public final class LockService {
 
     private void cleanupEmptyExtension(Sign sign) {
         String header = normalizeLine(sign.getLine(0));
-        if (header == null || !header.equalsIgnoreCase(config.moreUsersHeader())) {
+        if (!isExtensionHeader(header)) {
             return;
         }
 
@@ -592,11 +618,41 @@ public final class LockService {
         int count = 0;
         for (Sign sign : collectManagedSigns(target, null)) {
             String header = normalizeLine(sign.getLine(0));
-            if (header != null && header.equalsIgnoreCase(config.moreUsersHeader())) {
+            if (isExtensionHeader(header)) {
                 count++;
             }
         }
         return count;
+    }
+
+    private boolean isManagedHeader(String header) {
+        return isPrimaryHeader(header) || isExtensionHeader(header);
+    }
+
+    private boolean isPrimaryHeader(String header) {
+        return headerMatches(header, config.lockHeader(), PRIMARY_HEADER_ALIASES);
+    }
+
+    private boolean isExtensionHeader(String header) {
+        return headerMatches(header, config.moreUsersHeader(), EXTENSION_HEADER_ALIASES);
+    }
+
+    private boolean headerMatches(String header, String configuredHeader, Set<String> aliases) {
+        if (header == null) {
+            return false;
+        }
+
+        String normalizedConfigured = normalizeLine(configuredHeader);
+        if (normalizedConfigured != null && header.equalsIgnoreCase(normalizedConfigured)) {
+            return true;
+        }
+
+        for (String alias : aliases) {
+            if (header.equalsIgnoreCase(alias)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int usedExtensionCount(int allowedPlayerCount) {
@@ -634,17 +690,20 @@ public final class LockService {
         );
     }
 
-    private List<BlockFace> preferredPlacementFaces(BlockFace clickedFace, boolean prioritizeClickFace) {
+    private List<BlockFace> preferredPlacementFaces(BlockFace clickedFace, boolean prioritizeClickFace, boolean allowVertical) {
         List<BlockFace> faces = new ArrayList<>();
         if (prioritizeClickFace && clickedFace != null && HORIZONTAL_FACES.contains(clickedFace)) {
             faces.add(clickedFace);
         }
         for (BlockFace face : config.extensionPlacementOrder()) {
-            if (HORIZONTAL_FACES.contains(face) && !faces.contains(face)) {
+            if ((allowVertical || HORIZONTAL_FACES.contains(face)) && !faces.contains(face)) {
                 faces.add(face);
             }
         }
-        for (BlockFace face : HORIZONTAL_FACES) {
+        List<BlockFace> fallbackFaces = allowVertical
+                ? List.of(BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN)
+                : HORIZONTAL_FACES;
+        for (BlockFace face : fallbackFaces) {
             if (!faces.contains(face)) {
                 faces.add(face);
             }
@@ -658,15 +717,23 @@ public final class LockService {
             return null;
         }
 
-        signBlock.setType(signMaterial, false);
+        Material placementMaterial = resolvePlacementSignMaterial(signMaterial, face);
+        if (placementMaterial == null) {
+            return null;
+        }
+
+        signBlock.setType(placementMaterial, false);
         BlockData data = signBlock.getBlockData();
-        if (!(data instanceof Directional directional)) {
+        if (HORIZONTAL_FACES.contains(face) && !(data instanceof Directional directional)) {
             signBlock.setType(Material.AIR, false);
             return null;
         }
 
-        directional.setFacing(face);
-        signBlock.setBlockData(data, false);
+        if (HORIZONTAL_FACES.contains(face)) {
+            Directional directional = (Directional) data;
+            directional.setFacing(face);
+            signBlock.setBlockData(data, false);
+        }
         if (!(signBlock.getState() instanceof Sign signState)) {
             signBlock.setType(Material.AIR, false);
             return null;
@@ -686,6 +753,50 @@ public final class LockService {
         } catch (IllegalArgumentException ignored) {
         }
         return null;
+    }
+
+    private Material resolvePlacementSignMaterial(Material baseMaterial, BlockFace face) {
+        String name = baseMaterial.name();
+        try {
+            if (face == BlockFace.UP) {
+                if (name.endsWith("_WALL_HANGING_SIGN")) {
+                    return Material.valueOf(name.replace("_WALL_HANGING_SIGN", "_SIGN"));
+                }
+                if (name.endsWith("_HANGING_SIGN")) {
+                    return Material.valueOf(name.replace("_HANGING_SIGN", "_SIGN"));
+                }
+                if (name.endsWith("_WALL_SIGN")) {
+                    return Material.valueOf(name.replace("_WALL_SIGN", "_SIGN"));
+                }
+                return baseMaterial;
+            }
+
+            if (face == BlockFace.DOWN) {
+                if (name.endsWith("_WALL_HANGING_SIGN")) {
+                    return Material.valueOf(name.replace("_WALL_HANGING_SIGN", "_HANGING_SIGN"));
+                }
+                if (name.endsWith("_WALL_SIGN")) {
+                    return Material.valueOf(name.replace("_WALL_SIGN", "_HANGING_SIGN"));
+                }
+                if (name.endsWith("_SIGN") && !name.endsWith("_HANGING_SIGN")) {
+                    return Material.valueOf(name.replace("_SIGN", "_HANGING_SIGN"));
+                }
+                return baseMaterial;
+            }
+
+            if (name.endsWith("_WALL_HANGING_SIGN")) {
+                return baseMaterial;
+            }
+            if (name.endsWith("_HANGING_SIGN")) {
+                return Material.valueOf(name.replace("_HANGING_SIGN", "_WALL_HANGING_SIGN"));
+            }
+            if (name.endsWith("_SIGN") && !name.endsWith("_WALL_SIGN")) {
+                return Material.valueOf(name.replace("_SIGN", "_WALL_SIGN"));
+            }
+            return baseMaterial;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static String normalizeLine(String line) {
